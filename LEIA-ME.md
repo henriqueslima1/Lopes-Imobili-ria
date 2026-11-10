@@ -20,7 +20,13 @@ public_html/
   index.html   o hub (tela, estilo e código num arquivo só)
   marca.js     nome, logo e cores da imobiliária: o único arquivo a editar
   senha.js     campo de senha sem preenchimento automático, com o olhinho
+server/
+  index.js     servidor Node (sem dependências) que entrega o public_html
+Dockerfile     o que o Railway usa para subir o servidor
 ```
+
+No Railway, o projeto **Lopes Imobiliária** sobe este repositório pelo `Dockerfile` a cada push.
+Por enquanto o servidor só entrega os arquivos. O `api.php` ainda não existe, então o hub abre em modo exemplo.
 
 ## Ver funcionando (modo exemplo)
 
@@ -28,7 +34,7 @@ Sem servidor, o hub abre em **modo exemplo**: qualquer senha entra, os números 
 e tocar no CRM mostra um aviso em vez de abrir uma página vazia.
 
 ```bash
-cd public_html && python3 -m http.server 8080
+node server/index.js
 ```
 
 Depois abra `http://localhost:8080/`.
@@ -73,6 +79,6 @@ Cada pessoa configura uma vez no próprio computador.
 
 ## Próximos passos
 
-1. Servidor (Railway): login, Postgres e a rota `api.php`, reaproveitando `server/` do `hub-ferramentas`.
+1. Servidor: login, Postgres e a rota `api.php`, reaproveitando o `server/` do `hub-ferramentas`.
 2. CRM da Lopes em `/crm/`.
 3. Assinatura mensal pelo Asaas: cobrança recorrente e aviso no hub quando o cartão não passar, com opção de pagar por Pix ou cartão.
