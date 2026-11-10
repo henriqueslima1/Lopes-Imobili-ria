@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F3F5F4">
+<title>Hub</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='28' fill='%230E5B66'/%3E%3Cpath fill='%23fff' d='M24 50 50 28l26 22v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5-5z'/%3E%3Crect x='43' y='56' width='14' height='21' rx='3' fill='%230E5B66'/%3E%3Ccircle cx='74' cy='26' r='7' fill='%23C8963E'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="marca.js"></script>
+<script>
+/* antes de pintar a tela: tema (o salvo ou o do aparelho) e as cores da marca (marca.js) */
+(function () {
+  var r = document.documentElement, m = window.MARCA || {};
+  try {
+    var t = localStorage.getItem('hub-imob-tema');
+    if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) r.dataset.theme = 'dark';
+  } catch (e) {}
+  var cor = function (c) { return c && window.CSS && CSS.supports && CSS.supports('color', c); };
+  if (cor(m.cor)) r.style.setProperty('--marca', m.cor);
+  if (cor(m.acento)) r.style.setProperty('--acento', m.acento);
+})();
+</script>
+<style>
+/* Hub da imobiliária: as ferramentas da equipe como aplicativos (tela inicial do iPhone) + barra lateral de vidro.
+   Mesma ideia do Hub ADM, com a cara de imobiliária: petróleo (confiança) + dourado (padrão alto).
+   Claro por padrão: névoa perolada com brilhos de petróleo e areia.
+   Escuro: noite petróleo com aurora verde-azulada e dourada, vidro com reflexo e ícones que brilham.
+   A cor principal e a de destaque vêm do marca.js (--marca e --acento); o resto deriva delas. */
+:root {
+  --marca: #0E5B66; --acento: #C8963E;
+  --bg: #F3F5F4;
+  --brilho1: color-mix(in srgb, var(--marca) 24%, transparent);
+  --brilho2: color-mix(in srgb, var(--acento) 34%, transparent);
+  --brilho3: color-mix(in srgb, var(--marca) 13%, transparent);
+  --vidro: rgba(255, 255, 255, .72); --vidro-borda: rgba(255, 255, 255, .95); --reflexo: inset 0 1px 0 rgba(255, 255, 255, .9);
+  --forte: #FFFFFF; --borda: rgba(21, 32, 31, .08); --borda2: rgba(21, 32, 31, .14);
+  --texto: #15201F; --suave: #55625F; --apagado: #8E9B98; --titulo2: #A3AFAC; --leve: rgba(21, 32, 31, .05);
+  --pri: var(--marca); --pri2: color-mix(in oklab, var(--marca) 70%, white);
+  --pri-claro: color-mix(in oklab, var(--marca) 14%, white); --pri-texto: color-mix(in oklab, var(--marca) 85%, black);
+  --destaque: var(--marca); --alerta: #E4573D;
+  --brilho-marca: color-mix(in srgb, var(--marca) 30%, transparent); --brilho-acento: color-mix(in srgb, var(--acento) 34%, transparent);
+  --sombra: 0 1px 2px rgba(21, 32, 31, .04), 0 18px 44px color-mix(in srgb, var(--marca) 11%, transparent);
+  --sombra-forte: 0 28px 60px color-mix(in srgb, var(--marca) 20%, transparent);
+  --ok: #15803D; --ok-bg: #DCFCE7; --atencao: #A16207; --atencao-bg: #FEF3C7;
+  --widget2-bg: color-mix(in oklab, var(--acento) 26%, white); --widget2-txt: #15201F; --widget2-sub: color-mix(in oklab, var(--acento) 45%, #2A2216);
+  --ativo-bg: #15201F; --ativo-txt: #FFFFFF;
+  --folha-bg: #FFFFFF; --campo-bg: #F5F7F6; --fundo-escuro: rgba(21, 32, 31, .32);
+  --erro: #DC2626;
+  --pill: 999px;
+  --ease: cubic-bezier(.32, .72, 0, 1); --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #091416;
+  --brilho1: color-mix(in srgb, var(--marca) 58%, transparent);
+  --brilho2: color-mix(in srgb, var(--acento) 18%, transparent);
+  --brilho3: rgba(38, 104, 160, .26);
+  --vidro: rgba(255, 255, 255, .055); --vidro-borda: rgba(255, 255, 255, .1); --reflexo: inset 0 1px 0 rgba(255, 255, 255, .09);
+  --forte: #12262A; --borda: rgba(255, 255, 255, .09); --borda2: rgba(255, 255, 255, .16);
+  --texto: #EEF5F4; --suave: #A9BCB9; --apagado: #7A918D; --titulo2: #5F7B77; --leve: rgba(255, 255, 255, .07);
+  --pri: color-mix(in oklab, var(--marca) 82%, white); --pri2: color-mix(in oklab, var(--marca) 50%, white);
+  --pri-claro: color-mix(in srgb, var(--marca) 34%, transparent); --pri-texto: color-mix(in oklab, var(--marca) 25%, white);
+  --destaque: color-mix(in oklab, var(--marca) 38%, white);
+  --brilho-marca: color-mix(in srgb, var(--pri) 50%, transparent); --brilho-acento: color-mix(in srgb, var(--acento) 42%, transparent);
+  --sombra: 0 18px 44px rgba(0, 6, 8, .45); --sombra-forte: 0 30px 70px rgba(0, 6, 8, .6);
+  --ok: #6EE7A0; --ok-bg: rgba(74, 222, 128, .14); --atencao: #FCD34D; --atencao-bg: rgba(251, 191, 36, .14);
+  --widget2-bg: linear-gradient(150deg, color-mix(in oklab, var(--marca) 72%, #091416) 0%, #0E2427 100%); --widget2-txt: #EEF5F4; --widget2-sub: color-mix(in oklab, var(--acento) 55%, white);
+  --ativo-bg: #FFFFFF; --ativo-txt: #091416;
+  --folha-bg: #0F2124; --campo-bg: rgba(255, 255, 255, .05); --fundo-escuro: rgba(0, 6, 8, .6);
+  --erro: #F87171;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--texto); font-family: var(--font); font-size: 14px; -webkit-font-smoothing: antialiased; line-height: 1.45; min-height: 100vh; overflow-x: clip; transition: background .5s, color .5s; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(65vmax 50vmax at 0% -10%, var(--brilho1), transparent 62%),
+              radial-gradient(50vmax 40vmax at 105% -5%, var(--brilho2), transparent 60%),
+              radial-gradient(60vmax 50vmax at 85% 110%, var(--brilho3), transparent 60%); }
+/* no escuro, um pó de estrelas bem discreto por cima da aurora */
+:root[data-theme="dark"] body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
+  background-image: radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.7), transparent 60%), radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,.6), transparent 60%),
+    radial-gradient(1.5px 1.5px at 64% 42%, rgba(255,255,255,.5), transparent 60%), radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,.55), transparent 60%),
+    radial-gradient(1px 1px at 88% 78%, rgba(255,255,255,.5), transparent 60%), radial-gradient(1.5px 1.5px at 46% 88%, rgba(255,255,255,.4), transparent 60%),
+    radial-gradient(1px 1px at 22% 40%, rgba(255,255,255,.45), transparent 60%), radial-gradient(1px 1px at 92% 46%, rgba(255,255,255,.5), transparent 60%); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--pri) 50%, transparent); outline-offset: 3px; }
+a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+svg { display: block; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+.tap { transition: transform .35s var(--spring), background .25s, border-color .25s; }
+.tap:active { transform: scale(.94); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- estrutura: barra lateral + conteúdo ---------- */
+.app { display: flex; min-height: 100vh; }
+.lateral { position: sticky; z-index: 20; top: 0; height: 100vh; flex: none; padding: max(18px, env(safe-area-inset-top, 0px)) 0 18px max(18px, env(safe-area-inset-left, 0px)); }
+.lateral nav { width: 96px; height: 100%; border-radius: 30px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo);
+  backdrop-filter: blur(22px) saturate(1.6); -webkit-backdrop-filter: blur(22px) saturate(1.6); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; transition: background .5s, border-color .5s; }
+.lateral .logo { width: 40px; height: 40px; object-fit: contain; }
+.lateral .linha { width: 40px; height: 1px; background: var(--borda); margin: 6px 0; flex: none; }
+.lateral .itens { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px; }
+.lado-btn { position: relative; width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; flex: none; color: var(--suave); transition: transform .35s var(--spring), background .3s, color .3s; }
+.lado-btn svg { width: 24px; height: 24px; }
+.lado-btn.ativo { background: var(--ativo-bg); color: var(--ativo-txt); }
+.lado-btn .bolha { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--alerta); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--bg); }
+.lado-btn .dica { position: absolute; left: calc(100% + 14px); top: 50%; transform: translate(-6px, -50%); opacity: 0; pointer-events: none; white-space: nowrap; background: var(--texto); color: var(--bg); font-size: 13px; font-weight: 600; padding: 7px 11px; border-radius: 10px; transition: opacity .2s, transform .3s var(--spring); z-index: 5; }
+.lado-btn .dica .k { font: 600 11px var(--font); opacity: .65; margin-left: 8px; }
+@media (hover: hover) { .lado-btn:hover .dica, .lado-btn:focus-visible .dica { opacity: 1; transform: translate(0, -50%); } .lado-btn:hover { transform: scale(1.06); color: var(--texto); } .lado-btn.ativo:hover { color: var(--ativo-txt); } }
+.lateral .espaco { flex: 1; }
+.redondo { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--forte); border: 1px solid var(--borda); font-weight: 800; font-size: 13px; flex: none; }
+.redondo svg { width: 19px; height: 19px; }
+.redondo.marca { background: var(--pri-claro); border-color: transparent; color: var(--pri-texto); }
+
+.conteudo { flex: 1; min-width: 0; padding: max(30px, env(safe-area-inset-top, 0px)) max(40px, env(safe-area-inset-right, 0px)) 48px 40px; display: flex; flex-direction: column; }
+.topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: var(--suave); }
+.topo-dir { display: flex; align-items: center; gap: 10px; }
+.topo .exemplo { background: var(--pri-claro); color: var(--pri-texto); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: var(--pill); }
+.ola { text-align: center; margin-top: clamp(30px, 6vh, 64px); }
+.ola p { font-size: 16px; font-weight: 600; color: var(--destaque); }
+.ola h1 { font-size: clamp(36px, 5.4vw, 66px); font-weight: 800; letter-spacing: -.05em; line-height: 1.02; margin-top: 8px; text-wrap: balance; }
+.ola h1 span { color: var(--titulo2); }
+
+.miolo { display: flex; flex-direction: column; gap: clamp(36px, 5vh, 52px); align-items: center; margin-top: clamp(34px, 6vh, 60px); }
+.widgets { display: flex; gap: 16px; width: min(100%, 900px); }
+.widgets .widget { flex: 1 1 0; min-width: 0; }
+.widget { display: block; border-radius: 30px; padding: 22px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: surge .8s var(--ease) both; transition: transform .5s var(--spring); }
+@media (hover: hover) { .widget:hover { transform: translateY(-3px); } }
+.widget small { display: block; font-size: 13px; font-weight: 600; color: var(--suave); }
+.widget b { display: block; font-size: 34px; font-weight: 800; letter-spacing: -.045em; margin-top: 6px; line-height: 1.1; }
+.widget p { font-size: 13px; color: var(--suave); margin-top: 8px; }
+.widget.w2 { background: var(--widget2-bg); border-color: transparent; color: var(--widget2-txt); }
+.widget.w2 small, .widget.w2 p { color: var(--widget2-sub); }
+.widget.w3 b { color: var(--atencao); }
+
+/* ---------- ícones de aplicativo ---------- */
+.apps { display: grid; grid-template-columns: repeat(auto-fit, 150px); justify-content: center; gap: 34px 48px; width: min(100%, 900px); }
+.app-ic { position: relative; display: flex; flex-direction: column; align-items: center; gap: 11px; text-align: center; animation: surge .8s var(--ease) both; animation-delay: var(--d, 0s); }
+.app-ic .quadro { position: relative; width: 128px; height: 128px; border-radius: 36px; display: grid; place-items: center; color: #fff; transition: transform .5s var(--spring), box-shadow .4s; }
+.app-ic .quadro svg { width: 54px; height: 54px; }
+@media (hover: hover) { .app-ic:hover .quadro { transform: translateY(-5px) scale(1.04); } }
+.app-ic:active .quadro { transform: scale(.92); }
+.app-ic .nome { font-size: 16px; font-weight: 700; line-height: 1.2; }
+.app-ic .desc { font-size: 13px; color: var(--suave); line-height: 1.35; margin-top: -6px; white-space: nowrap; }
+.app-ic .bolha { position: absolute; top: -8px; right: -8px; min-width: 34px; height: 34px; padding: 0 8px; border-radius: 17px; background: var(--alerta); color: #fff; font-size: 15px; font-weight: 800; display: grid; place-items: center; border: 3px solid var(--bg); }
+.cor-marca { background: linear-gradient(150deg, var(--pri2), var(--marca)); box-shadow: 0 20px 40px var(--brilho-marca), inset 0 1px 0 rgba(255, 255, 255, .35); }
+.cor-acento { background: linear-gradient(150deg, color-mix(in oklab, var(--acento) 62%, white), color-mix(in oklab, var(--acento) 88%, black)); box-shadow: 0 20px 40px var(--brilho-acento), inset 0 1px 0 rgba(255, 255, 255, .4); }
+:root[data-theme="dark"] .cor-marca { background: linear-gradient(150deg, var(--pri2), color-mix(in oklab, var(--marca) 90%, white)); }
+@keyframes surge { from { opacity: 0; transform: translateY(24px) scale(.96); filter: blur(8px); } }
+
+.rodape { text-align: center; color: var(--apagado); font-size: 13px; margin-top: auto; padding-top: 48px; }
+.rodape a { color: inherit; } .rodape a:hover { color: var(--destaque); }
+
+/* ---------- resumo do dia, embaixo do título ---------- */
+.ola .resumo { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 9px 16px; border-radius: var(--pill); background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-size: 14px; font-weight: 600; color: var(--suave); text-align: left; animation: surge .8s var(--ease) both; }
+.ola .resumo a { color: var(--texto); text-decoration: underline; text-decoration-color: var(--borda2); text-underline-offset: 3px; }
+.ola .resumo .luz { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px var(--ok-bg); flex: none; }
+.ola .resumo.atencao .luz { background: var(--atencao); box-shadow: 0 0 0 4px var(--atencao-bg); animation: pulsar 2.2s ease-in-out infinite; }
+@keyframes pulsar { 50% { box-shadow: 0 0 0 8px var(--atencao-bg); } }
+/* redesenho sem repetir a animação de entrada */
+#apps.quieto .app-ic, #widgets.quieto .widget { animation: none; }
+
+/* ---------- celular: barra lateral vira barra de baixo ---------- */
+@media (max-width: 900px) {
+  .miolo { gap: 28px; }
+  .widgets { width: min(100%, 560px); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 4px; }
+  .widgets::-webkit-scrollbar { display: none; }
+  .widgets .widget { min-width: 230px; flex: 1 0 230px; scroll-snap-align: start; box-shadow: 0 1px 2px rgba(21, 32, 31, .04), 0 8px 18px color-mix(in srgb, var(--marca) 9%, transparent), var(--reflexo); }
+}
+@media (max-width: 760px) {
+  /* os cartões rolam de ponta a ponta da tela, sem cortar a sombra */
+  .widgets { width: calc(100% + 32px); max-width: none; margin: -8px -16px -24px; padding: 8px 16px 24px; scroll-padding-inline: 16px; }
+}
+@media (max-width: 760px) {
+  .app { flex-direction: column; }
+  .lateral { position: fixed; z-index: 30; top: auto; bottom: 0; left: 0; right: 0; height: auto; padding: 0 max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+  .lateral nav { width: 100%; height: 74px; flex-direction: row; padding: 0 10px; border-radius: 26px; gap: 6px; }
+  .lateral .logo, .lateral .linha, .lateral .espaco, #buscar { display: none; }
+  .lateral .itens { flex-direction: row; gap: 6px; flex: 1; }
+  .lado-btn { width: 50px; height: 50px; border-radius: 16px; }
+  .lado-btn .dica { display: none; }
+  .redondo { width: 44px; height: 44px; }
+  .conteudo { padding: max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(110px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .apps { grid-template-columns: repeat(auto-fit, min(140px, 42vw)); gap: 24px 16px; width: 100%; }
+  .app-ic .quadro { width: min(96px, 26vw); height: min(96px, 26vw); border-radius: 28px; }
+  .app-ic .quadro svg { width: 42px; height: 42px; }
+  .app-ic .nome { font-size: 15px; }
+  .app-ic .desc { font-size: 12px; }
+  .app-ic .bolha { min-width: 28px; height: 28px; font-size: 13px; }
+  .topo { flex-wrap: wrap; }
+  .ola .resumo { font-size: 13px; }
+}
+
+/* ---------- folhas (configurar a agenda) ---------- */
+.fundo { position: fixed; inset: 0; z-index: 40; background: var(--fundo-escuro); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .35s; }
+.fundo.on { opacity: 1; }
+.folha { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow: auto; background: var(--folha-bg); border: 1px solid var(--borda); border-radius: 30px 30px 0 0;
+  padding: 10px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  transform: translateY(105%); transition: transform .55s var(--ease); box-shadow: 0 -20px 60px rgba(21, 32, 31, .15), var(--reflexo); }
+.folha.on { transform: none; }
+@media (min-width: 700px) { .folha { left: 50%; right: auto; bottom: 50%; width: 520px; border-radius: 30px; transform: translate(-50%, 60%) scale(.96); opacity: 0; transition: transform .5s var(--ease), opacity .3s; }
+  .folha.on { transform: translate(-50%, 50%); opacity: 1; } }
+.alca { width: 40px; height: 5px; border-radius: 3px; background: var(--borda2); margin: 0 auto 14px; }
+.folha h3 { font-size: 22px; letter-spacing: -.03em; margin: 6px 2px 16px; }
+.folha form { display: grid; gap: 8px; }
+.folha label, .folha .rot { font-size: 13px; font-weight: 600; color: var(--suave); margin: 6px 2px 0; }
+.campo { width: 100%; height: 50px; border-radius: 14px; border: 1px solid var(--borda2); background: var(--campo-bg); padding: 0 14px; font-size: 16px; outline: none; transition: border-color .2s, box-shadow .2s; }
+.campo:focus { border-color: var(--pri2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pri) 18%, transparent); }
+.fim-folha { display: flex; gap: 10px; margin-top: 14px; }
+.fim-folha button { flex: 1; height: 52px; border-radius: 16px; font-weight: 700; font-size: 16px; }
+.b-salvar { background: var(--pri); color: #fff; }
+.b-cancelar { background: var(--leve); border: 1px solid var(--borda2); }
+.erro-f { color: var(--erro); font-size: 14px; min-height: 18px; }
+
+/* ---------- entrada ---------- */
+.entrada { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; background: var(--bg);
+  padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
+.entrada::before { content: ""; position: absolute; inset: 0; background: radial-gradient(60vmax 50vmax at 10% 0%, var(--brilho1), transparent 60%), radial-gradient(50vmax 40vmax at 100% 10%, var(--brilho2), transparent 60%), radial-gradient(50vmax 40vmax at 90% 100%, var(--brilho3), transparent 60%); }
+.entrada-card { position: relative; width: min(380px, 100%); text-align: center; padding: 34px 26px 26px; border-radius: 32px; background: var(--vidro); border: 1px solid var(--vidro-borda);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: var(--sombra-forte), var(--reflexo); animation: surge .8s var(--ease) both; }
+.entrada-card .g { width: 62px; height: 62px; margin: 0 auto 16px; object-fit: contain; }
+.entrada-card h2 { font-size: 28px; letter-spacing: -.035em; }
+.entrada-card p { color: var(--suave); font-size: 15px; margin-top: 6px; }
+.entrada-card form { display: grid; gap: 10px; margin-top: 22px; text-align: left; }
+.entrada-card .b-salvar { height: 52px; border-radius: 16px; font-weight: 700; }
+.aviso { position: fixed; z-index: 80; left: 50%; top: max(16px, env(safe-area-inset-top, 0px)); transform: translate(-50%, calc(-100% - 40px)); visibility: hidden; background: var(--texto); color: var(--bg); padding: 12px 18px; border-radius: var(--pill);
+  font-size: 14px; font-weight: 600; transition: transform .5s var(--spring), visibility 0s .5s; max-width: calc(100% - 32px); text-align: center; }
+.aviso.on { transform: translate(-50%, 0); visibility: visible; transition: transform .5s var(--spring); }
+
+/* ---------- busca rápida (Ctrl+K) ---------- */
+.dica-k { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 14px; border-radius: var(--pill); background: var(--vidro); border: 1px solid var(--vidro-borda); font-size: 13px; font-weight: 600; color: var(--suave); }
+.dica-k svg { width: 15px; height: 15px; }
+.dica-k kbd, .busca-topo kbd { font: 600 12px var(--font); color: var(--apagado); border: 1px solid var(--borda2); border-radius: 7px; padding: 2px 7px; background: var(--forte); }
+.busca { position: fixed; z-index: 61; left: 50%; top: max(12vh, 24px); width: min(560px, calc(100% - 32px)); transform: translate(-50%, -12px) scale(.97); opacity: 0; transition: transform .45s var(--spring), opacity .25s; background: var(--folha-bg); border: 1px solid var(--borda2); border-radius: 26px; box-shadow: var(--sombra-forte), var(--reflexo); overflow: hidden; }
+.busca.on { transform: translate(-50%, 0) scale(1); opacity: 1; }
+.busca-topo { display: flex; align-items: center; gap: 12px; padding: 0 18px; height: 64px; border-bottom: 1px solid var(--borda); color: var(--suave); }
+.busca-topo svg { width: 20px; height: 20px; flex: none; }
+.busca-topo input { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: none; font-size: 18px; color: var(--texto); }
+.busca-lista { list-style: none; max-height: min(56vh, 420px); overflow: auto; padding: 8px; }
+.busca-lista .grupo { font-size: 12px; font-weight: 700; color: var(--apagado); text-transform: uppercase; letter-spacing: .06em; padding: 10px 12px 6px; }
+.busca-lista a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; }
+.busca-lista a.on { background: var(--leve); }
+.busca-lista .mini { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: #fff; flex: none; box-shadow: none !important; }
+.busca-lista .mini svg { width: 20px; height: 20px; }
+.busca-lista .mini.acao { background: var(--leve); color: var(--texto); border: 1px solid var(--borda); }
+.busca-lista b { display: block; font-size: 15px; font-weight: 700; }
+.busca-lista small { display: block; font-size: 13px; color: var(--suave); }
+.busca-lista .seta { margin-left: auto; color: var(--apagado); font-size: 12px; font-weight: 600; opacity: 0; white-space: nowrap; }
+.busca-lista a.on .seta { opacity: 1; }
+.busca-vazio { padding: 26px 12px; text-align: center; color: var(--suave); font-size: 14px; }
+@media (max-width: 760px) { .dica-k kbd, .busca-topo kbd { display: none; } .dica-k { padding: 0 14px; } }
+
+/* ---------- aba Agenda: agenda da equipe e reunião rápida ---------- */
+.painel { margin-top: clamp(24px, 4vh, 40px); }
+.painel-cab { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.painel-cab h2 { font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -.04em; line-height: 1.1; }
+.painel-cab p { color: var(--suave); font-size: 15px; margin-top: 4px; }
+.painel-acoes { display: flex; align-items: center; gap: 10px; }
+.seg { display: flex; padding: 4px; border-radius: var(--pill); background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--reflexo); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.seg button { height: 38px; padding: 0 16px; border-radius: var(--pill); font-size: 14px; font-weight: 600; color: var(--suave); transition: background .25s, color .25s; }
+.seg button.on { background: var(--forte); color: var(--texto); box-shadow: 0 1px 3px rgba(21, 32, 31, .12); }
+.painel-grade { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.lado-col { display: flex; flex-direction: column; gap: 20px; }
+.agenda-card, .meet-card { border-radius: 30px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.agenda-card { padding: 10px; overflow: hidden; }
+.ag-frame { display: block; width: 100%; height: 560px; border: 0; border-radius: 22px; background: #fff; }
+.ag-rodape { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 10px 4px; }
+.ag-pessoas { display: flex; flex-wrap: wrap; gap: 8px; }
+.ag-pessoa { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--pill); background: var(--forte); border: 1px solid var(--borda); font-size: 13px; font-weight: 600; }
+.ag-pessoa i { width: 10px; height: 10px; border-radius: 50%; }
+.ag-links { display: flex; gap: 16px; flex-wrap: wrap; }
+.ag-links a { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--destaque); }
+.ag-links svg { width: 16px; height: 16px; }
+/* calendário do mês */
+.cal { padding: 22px; }
+.cal-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.cal-cab b { font-size: 22px; font-weight: 800; letter-spacing: -.03em; }
+.cal-nav { display: flex; gap: 8px; }
+.cal-nav button { height: 40px; min-width: 40px; padding: 0 12px; border-radius: 12px; background: var(--forte); border: 1px solid var(--borda); font-weight: 600; font-size: 14px; display: grid; place-items: center; }
+.cal-nav svg { width: 16px; height: 16px; }
+.cal-sem, .cal-grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.cal-sem span { font-size: 12px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .06em; padding: 0 4px 6px; }
+.cal-dia { min-height: 84px; border-radius: 16px; background: var(--forte); border: 1px solid var(--borda); padding: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 15px; font-weight: 700; transition: transform .3s var(--spring), border-color .2s; }
+.cal-dia small { font-size: 11px; font-weight: 600; color: var(--acento); line-height: 1.2; }
+:root:not([data-theme="dark"]) .cal-dia small { color: color-mix(in oklab, var(--acento) 75%, black); }
+.cal-dia.fds { background: var(--leve); }
+.cal-dia.fora { opacity: .4; }
+.cal-dia.hoje { background: var(--pri); color: #fff; border-color: transparent; box-shadow: 0 10px 24px var(--brilho-marca); }
+.cal-dia.hoje small { color: #fff !important; }
+@media (hover: hover) { .cal-dia:hover { transform: translateY(-2px); border-color: var(--borda2); } }
+.cal-aviso { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 18px; padding: 14px 16px; border-radius: 18px; background: var(--leve); font-size: 14px; color: var(--suave); }
+.cal-aviso .b-salvar { height: 44px; padding: 0 18px; border-radius: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+.cal-aviso .b-salvar svg { width: 16px; height: 16px; }
+.cal.mini { padding: 16px; }
+.cal.mini .cal-cab b { font-size: 17px; }
+.cal.mini .cal-sem, .cal.mini .cal-grade { gap: 5px; }
+.cal.mini .cal-sem span { text-align: center; padding: 0 0 4px; }
+.cal.mini .cal-dia { min-height: 0; aspect-ratio: 1; padding: 0; align-items: center; justify-content: center; font-size: 13px; border-radius: 11px; }
+.cal.mini .cal-dia small { display: none; }
+.cal.mini .cal-dia.feriado { box-shadow: inset 0 -3px 0 var(--acento); }
+/* reunião rápida */
+.meet-card { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.meet-topo { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.meet-ic { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; color: #fff; flex: none; }
+.meet-ic svg { width: 28px; height: 28px; }
+.meet-topo b { display: block; font-size: 18px; letter-spacing: -.02em; }
+.meet-topo small { display: block; font-size: 13px; color: var(--suave); }
+.meet-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; padding: 0 16px; border-radius: 16px; background: var(--forte); border: 1px solid var(--borda); font-size: 15px; font-weight: 600; text-align: center; }
+.meet-btn svg { width: 18px; height: 18px; flex: none; }
+.meet-btn.principal { background: var(--pri); border-color: transparent; color: #fff; font-weight: 700; box-shadow: 0 12px 28px var(--brilho-marca); }
+@media (hover: hover) { .meet-btn:hover, .ag-links a:hover { filter: brightness(1.06); } .meet-btn:not(.principal):hover { border-color: var(--borda2); } }
+.meet-sala { display: flex; gap: 8px; }
+.meet-sala .meet-btn { flex: 1; }
+.meet-copiar { width: 50px; flex: none; border-radius: 16px; background: var(--forte); border: 1px solid var(--borda); display: grid; place-items: center; }
+.meet-copiar svg { width: 18px; height: 18px; }
+.meet-nota { font-size: 12.5px; color: var(--apagado); text-align: center; margin-top: 2px; }
+/* folha de configurar a agenda */
+.ag-ajuda { font-size: 14px; color: var(--suave); line-height: 1.5; margin: 0 2px 6px; }
+.ag-linha { display: grid; grid-template-columns: 40px minmax(0, .8fr) minmax(0, 1.4fr) 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.ag-linha .campo { height: 46px; font-size: 15px; }
+.ag-cor { width: 40px; height: 40px; border-radius: 13px; box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .55); }
+.ag-tirar { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; color: var(--erro); }
+.ag-tirar svg { width: 18px; height: 18px; }
+.ag-mais { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 14px; border: 1px dashed var(--borda2); color: var(--destaque); font-weight: 600; justify-self: start; }
+.ag-mais svg { width: 16px; height: 16px; }
+@media (max-width: 900px) { .painel-grade { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  .painel { margin-top: 28px; }
+  .painel-acoes { width: 100%; justify-content: flex-end; }
+  .painel-acoes .seg { margin-right: auto; }
+  .ag-frame { height: 480px; border-radius: 18px; }
+  .agenda-card, .meet-card { border-radius: 26px; }
+  .cal { padding: 14px; }
+  .cal-sem, .cal-grade { gap: 4px; }
+  .cal-dia { min-height: 54px; padding: 6px; font-size: 13px; border-radius: 12px; }
+  .cal-dia small { display: none; }
+  .cal-dia.feriado { box-shadow: inset 0 -3px 0 var(--acento); }
+  .ag-linha { grid-template-columns: 40px minmax(0, 1fr) 40px; }
+  .ag-linha .ag-cor { grid-column: 1; grid-row: 1; }
+  .ag-linha [data-campo="nome"] { grid-column: 2; grid-row: 1; }
+  .ag-linha .ag-tirar { grid-column: 3; grid-row: 1; }
+  .ag-linha [data-campo="id"] { grid-column: 1 / 4; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .widget, .app-ic, .entrada-card, .ola .resumo, .ola .resumo .luz { animation: none; }
+  * { transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- símbolo neutro (casinha) enquanto a logo da imobiliária não estiver no marca.js -->
+    <g id="logo-marca"><rect width="100" height="100" rx="28" style="fill:var(--pri)"/><path fill="#FFFFFF" d="M24 50 50 28l26 22v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5-5z"/><rect x="43" y="56" width="14" height="21" rx="3" style="fill:var(--pri)"/><circle cx="74" cy="26" r="7" style="fill:var(--acento)"/></g>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <aside class="lateral">
+    <nav aria-label="Navegação do hub">
+      <svg class="logo" data-logo viewBox="0 0 100 100" aria-hidden="true"><use href="#logo-marca"/></svg>
+      <span class="linha"></span>
+      <div class="itens" id="lado"></div>
+      <span class="espaco"></span>
+      <button class="redondo tap" id="buscar" aria-label="Buscar (Ctrl+K)"></button>
+      <button class="redondo tap" id="tema" aria-label="Modo escuro"></button>
+      <button class="redondo marca tap" id="conta" aria-label="Conta"></button>
+    </nav>
+  </aside>
+
+  <main class="conteudo">
+    <div class="topo">
+      <span id="data"></span>
+      <span class="topo-dir"><span class="exemplo" id="exemplo" hidden>dados de exemplo</span><button type="button" class="dica-k tap" id="buscar2">Buscar <kbd>Ctrl K</kbd></button></span>
+    </div>
+
+    <div class="vista" id="v-inicio">
+      <div class="ola">
+        <p id="saudacao">Olá</p>
+        <h1>Vamos fechar negócio <span>hoje?</span></h1>
+        <p class="resumo" id="resumo" hidden></p>
+      </div>
+      <div class="miolo">
+        <div class="apps" id="apps" aria-label="Ferramentas"></div>
+        <div class="widgets" id="widgets"></div>
+      </div>
+    </div>
+
+    <section class="painel vista" id="agenda" hidden aria-labelledby="agenda-titulo">
+      <div class="painel-cab">
+        <div><h2 id="agenda-titulo">Agenda da equipe</h2><p>Visitas e compromissos dos corretores, direto do Google Agenda</p></div>
+        <div class="painel-acoes">
+          <div class="seg" id="ag-modo" role="group" aria-label="Como mostrar a agenda">
+            <button type="button" data-modo="AGENDA">Lista</button><button type="button" data-modo="WEEK">Semana</button><button type="button" data-modo="MONTH">Mês</button>
+          </div>
+          <button type="button" class="redondo tap" id="ag-config" aria-label="Configurar a agenda"></button>
+        </div>
+      </div>
+      <div class="painel-grade">
+        <div class="agenda-card" id="ag-card"></div>
+        <div class="lado-col">
+          <div class="agenda-card" id="cal-mini-card" hidden><div class="cal mini" id="cal-mini"></div></div>
+          <aside class="meet-card" id="meet-card" aria-label="Visitas e reuniões"></aside>
+        </div>
+      </div>
+    </section>
+
+    <p class="rodape" id="rodape"></p>
+  </main>
+</div>
+
+<div class="entrada" id="entrada" hidden>
+  <div class="entrada-card">
+    <svg class="g" data-logo viewBox="0 0 100 100" aria-hidden="true"><use href="#logo-marca"/></svg>
+    <h2 id="e-titulo">Hub</h2>
+    <p id="e-sub">Entre com a senha da equipe.</p>
+    <form id="f-entrar" novalidate>
+      <input class="campo" id="e-senha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha">
+      <p class="erro-f" id="e-erro" role="alert"></p>
+      <button class="b-salvar tap" id="e-ok">Entrar</button>
+    </form>
+  </div>
+</div>
+<div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+
+<script src="senha.js"></script>
+<script>
+(() => {
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // tudo que o hub guarda no navegador usa este prefixo
+  const guardar = (k, v) => { try { localStorage.setItem('hub-imob-' + k, v); } catch (e) {} };
+  const lerGuardado = k => { try { return localStorage.getItem('hub-imob-' + k); } catch (e) { return null; } };
+
+  // ---------- marca: nome, site e logo vêm do marca.js ----------
+  const CFG = Object.assign({ empresa: 'Sua Imobiliária', hub: '', saudacao: 'equipe', iniciais: '', site: '', logo: '' }, (typeof MARCA === 'object' && MARCA) || {});
+  CFG.empresa = String(CFG.empresa || 'Sua Imobiliária');
+  const NOME_HUB = String(CFG.hub || '').trim() || 'Hub ' + CFG.empresa.split(/\s+/)[0];
+  const INICIAIS = (String(CFG.iniciais || '').trim() || CFG.empresa.split(/\s+/).filter(p => p.length > 2).slice(0, 2).map(p => p[0]).join('') || 'H').toUpperCase().slice(0, 3);
+
+  const svg = (d, w = 2) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const IC = {
+    inicio: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
+    pessoas: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5"/>',
+    agenda: '<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    calendario: '<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
+    casa: '<path d="M3 11 12 4l9 7"/><path d="M5 9.5V19a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1V9.5"/>',
+    funil: '<path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/>',
+    relogio: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    pronto: '<path d="m5 12 5 5L20 7"/>',
+    lua: '<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/>',
+    sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    mais: '<path d="M12 5v14M5 12h14"/>',
+    busca: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    engrenagem: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    externo: '<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>',
+    video: '<rect x="2.5" y="6" width="13" height="12" rx="3"/><path d="m15.5 10.5 6-3.5v10l-6-3.5z"/>',
+    copiar: '<rect x="8" y="8" width="13" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2.5 2.5 0 0 0 5.5 16H8"/>',
+    voltar: '<path d="m15 18-6-6 6-6"/>',
+    avancar: '<path d="m9 18 6-6-6-6"/>',
+    lixo: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3"/>'
+  };
+
+  // ---------- endereços ----------
+  // O CRM mora no mesmo site do hub, em /crm/ (o servidor encaminha para o serviço do CRM).
+  const CRM = '/crm/', CRM_QUADRO = '/crm/quadro.html', CRM_NOVO = '/crm/quadro.html?novo=1',
+        CRM_FOLLOW = '/crm/followups.html', CRM_RESPONDEU = '/crm/quadro.html#col-respondeu';
+  const MEET_NOVA = 'https://meet.google.com/new';
+  const AGENDA_GOOGLE = 'https://calendar.google.com/calendar/r';
+  const AGENDA_NOVO = 'https://calendar.google.com/calendar/r/eventedit';
+  const ehCrm = u => /^\/crm(\/|$)/.test(String(u || ''));
+  const ehExterno = u => /^https?:\/\//i.test(u) && !u.includes(location.host);
+  const alvo = u => ehExterno(u) ? ' target="_blank" rel="noopener"' : '';
+
+  // ferramentas do hub: por enquanto, CRM e Agenda
+  const FERRAMENTAS = [
+    { id: 'crm', nome: 'CRM', desc: 'Leads e follow-ups', url: CRM, icone: 'pessoas', cor: 'marca' },
+    { id: 'agenda', nome: 'Agenda', desc: 'Visitas da equipe', url: '#agenda', icone: 'agenda', cor: 'acento' }
+  ];
+
+  // ---------- servidor (api.php); sem servidor vira exemplo guardado neste navegador ----------
+  let DEMO = false, numeros = {}, falouComServidor = false;
+  const mostrado = {}; // números já mostrados nos widgets (para animar só a diferença)
+  const calmo = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  async function api(acao, dados = {}) {
+    if (DEMO) return demo(acao, dados);
+    let r;
+    try {
+      r = await fetch('api.php?acao=' + acao, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
+    } catch (e) {
+      // se o servidor já respondeu antes, foi só a internet piscando: avisa em vez de cair no modo exemplo
+      if (falouComServidor) { const x = new Error('Sem conexão com o servidor. Tente de novo em instantes.'); x.status = 0; throw x; }
+      DEMO = true; return demo(acao, dados);
+    }
+    if (!(r.headers.get('content-type') || '').includes('json')) {
+      if (falouComServidor) { const x = new Error('O servidor respondeu algo inesperado. Recarregue a página.'); x.status = r.status; throw x; }
+      DEMO = true; return demo(acao, dados);
+    }
+    falouComServidor = true;
+    const j = await r.json();
+    if (!r.ok) { const e = new Error(j.erro || 'Algo deu errado.'); e.status = r.status; throw e; }
+    return j;
+  }
+  function demo(acao) {
+    // no exemplo, depois da primeira entrada o navegador lembra e entra sozinho
+    if (acao === 'sessao') return { logado: lerGuardado('demo-logado') === '1' };
+    if (acao === 'entrar') { guardar('demo-logado', '1'); return { ok: true }; }
+    if (acao === 'dados') return { numeros: { crm: { novos: 4, responderam: 2, atrasados: 1, hoje: 3 } } };
+    return { ok: true };
+  }
+
+  function avisar(msg) {
+    const el = $('#aviso'); el.textContent = msg; el.classList.add('on');
+    clearTimeout(avisar.t); avisar.t = setTimeout(() => el.classList.remove('on'), 2800);
+  }
+  const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+
+  // ---------- números do CRM ----------
+  const crm = () => numeros.crm || null;
+  // leads esperando: sem primeiro contato + responderam e aguardam resposta
+  const esperando = () => crm() ? (Number(crm().novos) || 0) + (Number(crm().responderam) || 0) : 0;
+  const bolhaDe = f => f.id === 'crm' ? esperando() : 0;
+
+  // ---------- desenho da tela inicial ----------
+  function desenhar(quieto) {
+    pintarLado();
+    $('#apps').classList.toggle('quieto', !!quieto);
+    $('#apps').innerHTML = FERRAMENTAS.map((f, i) => `<a class="app-ic" href="${esc(f.url)}"${alvo(f.url)} data-id="${esc(f.id)}" style="--d:${.08 + i * .06}s" aria-label="${esc(f.nome)}${bolhaDe(f) ? ` (${bolhaDe(f)} esperando)` : ''}">
+        <span class="quadro cor-${esc(f.cor)}">${svg(IC[f.icone], 1.9)}${bolhaDe(f) ? `<span class="bolha">${bolhaDe(f)}</span>` : ''}</span>
+        <span class="nome">${esc(f.nome)}</span><span class="desc">${esc(f.desc)}</span>
+      </a>`).join('');
+    pintarWidgets(quieto);
+    resumo();
+  }
+
+  // widgets: números do CRM + atalho da agenda
+  function pintarWidgets(quieto) {
+    const w = [], c = crm();
+    if (c) {
+      const n = esperando(), novos = Number(c.novos) || 0, resp = Number(c.responderam) || 0;
+      w.push(`<a class="widget" data-id="crm" href="${CRM_QUADRO}"><small>Leads esperando você</small><b class="num"${n ? ` data-chave="esperando" data-conta="${n}"` : ''}>${n || 'Nenhum'}</b><p>${n ? [novos && plural(novos, 'novo', 'novos'), resp && plural(resp, 'respondeu', 'responderam')].filter(Boolean).join(' · ') : 'todo mundo já foi atendido'}</p></a>`);
+      const hoje = Number(c.hoje) || 0, atr = Number(c.atrasados) || 0, fu = hoje + atr;
+      w.push(`<a class="widget${atr ? ' w3' : ''}" data-id="crm" href="${CRM_FOLLOW}"><small>Follow-ups para hoje</small><b class="num"${fu ? ` data-chave="followups" data-conta="${fu}"` : ''}>${fu || 'Nenhum'}</b><p>${atr ? plural(atr, 'atrasado', 'atrasados') + ' de outros dias' : fu ? 'nada atrasado' : 'agenda de contatos em dia'}</p></a>`);
+    }
+    const d = new Date(), f = feriado(d), dia = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+    const pessoas = agenda.pessoas.length;
+    w.push(`<a class="widget w2" href="#agenda"><small>Agenda da equipe</small><b>${esc(dia.charAt(0).toUpperCase() + dia.slice(1).replace('-feira', ''))}, ${d.getDate()}</b><p>${f ? 'Feriado: ' + esc(f) : pessoas ? 'Ver visitas e compromissos de hoje' : 'Conecte as agendas dos corretores'}</p></a>`);
+    $('#widgets').classList.toggle('quieto', !!quieto);
+    $('#widgets').innerHTML = w.join('');
+    $$('#widgets .widget').forEach((el, i) => el.style.animationDelay = (.14 + i * .06) + 's');
+    animarNumeros();
+  }
+  // os números sobem contando até o valor (na primeira vez e sempre que mudam)
+  function animarNumeros() {
+    $$('#widgets [data-conta]').forEach(el => {
+      const chave = el.dataset.chave, fim = Number(el.dataset.conta) || 0;
+      const fmt = n => Math.round(n).toLocaleString('pt-BR');
+      const de = mostrado[chave];
+      mostrado[chave] = fim;
+      if (de === fim || calmo()) { el.textContent = fmt(fim); return; }
+      const ini = de || 0, t0 = performance.now(), dur = de === undefined ? 1100 : 700;
+      const passo = agora => {
+        const p = Math.max(0, Math.min((agora - t0) / dur, 1));
+        el.textContent = fmt(ini + (fim - ini) * (1 - Math.pow(1 - p, 3)));
+        if (p < 1 && el.isConnected) requestAnimationFrame(passo);
+      };
+      el.textContent = fmt(ini);
+      requestAnimationFrame(passo);
+    });
+  }
+
+  // ---------- resumo do dia, embaixo do título ----------
+  function resumo() {
+    const el = $('#resumo'), c = crm();
+    if (!c) { el.hidden = true; return; }
+    const itens = [], resp = Number(c.responderam) || 0, atr = Number(c.atrasados) || 0;
+    if (resp) itens.push(`<a href="${CRM_RESPONDEU}" data-id="crm">${resp} ${resp === 1 ? 'lead respondeu e espera' : 'leads responderam e esperam'} você</a>`);
+    if (atr) itens.push(`<a href="${CRM_FOLLOW}" data-id="crm">${plural(atr, 'follow-up atrasado', 'follow-ups atrasados')}</a>`);
+    el.classList.toggle('atencao', itens.length > 0);
+    el.innerHTML = '<span class="luz" aria-hidden="true"></span><span>' + (itens.length ? 'Atenção: ' + itens.join(' e ') : 'Tudo em dia por aqui') + '</span>';
+    el.hidden = false;
+  }
+
+  // ---------- abrir ferramentas ----------
+  // no modo exemplo o CRM ainda não está no ar: avisa em vez de abrir uma página vazia
+  function crmNoExemplo() { avisar('Exemplo: aqui abre o CRM da equipe.'); }
+  function abrirUrl(u) {
+    if (u === '#agenda') return irParaAgenda();
+    if (DEMO && ehCrm(u)) return crmNoExemplo();
+    if (ehExterno(u)) window.open(u, '_blank', 'noopener'); else location.href = u;
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (a && DEMO && ehCrm(a.getAttribute('href'))) { e.preventDefault(); crmNoExemplo(); }
+  }, true);
+
+  // ---------- busca rápida: Ctrl+K, a tecla / ou a lupa ----------
+  const ACOES = [
+    { nome: 'Novo lead', desc: 'Cadastrar um lead no CRM', url: CRM_NOVO, i: IC.mais },
+    { nome: 'Quadro de leads', desc: 'O funil do CRM, etapa por etapa', url: CRM_QUADRO, i: IC.funil },
+    { nome: 'Follow-ups de hoje', desc: 'Contatos marcados no CRM', url: CRM_FOLLOW, i: IC.relogio },
+    { nome: 'Agenda da equipe', desc: 'Visitas e compromissos dos corretores', fazer: () => irParaAgenda(), i: IC.calendario },
+    { nome: 'Agendar visita', desc: 'Novo compromisso no Google Agenda', url: AGENDA_NOVO + '?text=' + encodeURIComponent('Visita: '), i: IC.casa },
+    { nome: 'Começar reunião no Meet', desc: 'Cria uma sala nova agora', url: MEET_NOVA, i: IC.video },
+    { nome: 'Trocar tema', desc: 'Alternar entre claro e escuro', fazer: () => $('#tema').click(), i: IC.lua }
+  ];
+  if (CFG.site) ACOES.push({ nome: 'Abrir o site', desc: String(CFG.site).replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, ''), url: CFG.site, i: IC.externo });
+  const semAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  let buscaAberta = null;
+  function abrirBusca() {
+    if (buscaAberta || !$('#entrada').hidden || document.querySelector('.folha')) return;
+    const fundo = document.createElement('div'); fundo.className = 'fundo'; fundo.style.zIndex = 60;
+    const cx = document.createElement('div'); cx.className = 'busca'; cx.setAttribute('role', 'dialog'); cx.setAttribute('aria-label', 'Buscar');
+    cx.innerHTML = `<div class="busca-topo">${svg(IC.busca)}<input id="b-q" placeholder="Buscar ferramenta ou ação…" autocomplete="off" aria-label="Buscar" aria-controls="b-lista"><kbd>Esc</kbd></div><ul class="busca-lista" id="b-lista" role="listbox"></ul>`;
+    document.body.append(fundo, cx);
+    requestAnimationFrame(() => { fundo.classList.add('on'); cx.classList.add('on'); });
+    const q = $('#b-q', cx), ul = $('#b-lista', cx), antesFoco = document.activeElement;
+    let itens = [], sel = 0;
+    const fechar = () => {
+      buscaAberta = null; fundo.classList.remove('on'); cx.classList.remove('on'); setTimeout(() => { fundo.remove(); cx.remove(); }, 350);
+      if (antesFoco && antesFoco.isConnected && antesFoco.focus) antesFoco.focus({ preventScroll: true });
+    };
+    buscaAberta = fechar;
+    const executar = it => {
+      if (!it) return;
+      fechar();
+      if (it.fazer) return setTimeout(it.fazer, 200);
+      abrirUrl(it.url);
+    };
+    function marcar() { $$('a', ul).forEach(a => { const on = +a.dataset.i === sel; a.classList.toggle('on', on); a.setAttribute('aria-selected', on); if (on) a.scrollIntoView({ block: 'nearest' }); }); }
+    function pintar() {
+      const t = semAcento(q.value.trim());
+      const bate = x => !t || semAcento(x.nome + ' ' + (x.desc || '')).includes(t);
+      const fs = FERRAMENTAS.filter(bate).map(f => ({ ...f, tipo: 'f' }));
+      const as = ACOES.filter(bate).map(a => ({ ...a, tipo: 'a' }));
+      itens = [...fs, ...as]; sel = Math.min(sel, Math.max(itens.length - 1, 0));
+      if (!itens.length) { ul.innerHTML = `<li class="busca-vazio">Nada encontrado para “${esc(q.value)}”</li>`; return; }
+      const linha = (it, i) => `<li><a href="${it.url ? esc(it.url) : '#'}" data-i="${i}" role="option" aria-selected="${i === sel}" class="${i === sel ? 'on' : ''}">${it.tipo === 'f' ? `<span class="mini cor-${esc(it.cor)}">${svg(IC[it.icone], 1.9)}</span>` : `<span class="mini acao">${svg(it.i)}</span>`}<span><b>${esc(it.nome)}</b><small>${esc(it.desc || it.url)}</small></span><span class="seta">Enter ↵</span></a></li>`;
+      ul.innerHTML = (fs.length ? '<li class="grupo">Ferramentas</li>' + fs.map((it, i) => linha(it, i)).join('') : '') + (as.length ? '<li class="grupo">Ações</li>' + as.map((it, i) => linha(it, fs.length + i)).join('') : '');
+      $$('a', ul).forEach(a => {
+        a.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); executar(itens[+a.dataset.i]); });
+        a.addEventListener('mousemove', () => { if (sel !== +a.dataset.i) { sel = +a.dataset.i; marcar(); } });
+      });
+    }
+    q.addEventListener('input', () => { sel = 0; pintar(); });
+    q.addEventListener('keydown', e => {
+      const n = Math.max(itens.length, 1);
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = (sel + 1) % n; marcar(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = (sel - 1 + n) % n; marcar(); }
+      else if (e.key === 'Enter') { e.preventDefault(); executar(itens[sel]); }
+      else if (e.key === 'Escape') { e.preventDefault(); fechar(); }
+    });
+    fundo.addEventListener('click', fechar);
+    pintar(); setTimeout(() => q.focus(), 60);
+  }
+  document.addEventListener('keydown', e => {
+    const k = (e.key || '').toLowerCase(), foco = (document.activeElement && document.activeElement.tagName) || '';
+    if ((e.ctrlKey || e.metaKey) && k === 'k') { e.preventDefault(); buscaAberta ? buscaAberta() : abrirBusca(); }
+    else if (k === '/' && !e.ctrlKey && !e.metaKey && !/^(input|textarea|select)$/i.test(foco)) { e.preventDefault(); abrirBusca(); }
+    // Alt+1 abre o CRM, Alt+2 a Agenda
+    else if (e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-9]$/.test(e.code || '') && $('#entrada').hidden && !buscaAberta && !document.querySelector('.folha')) {
+      const f = FERRAMENTAS[Number(e.code.slice(5)) - 1];
+      if (f) { e.preventDefault(); abrirUrl(f.url); }
+    }
+  });
+  $('#buscar').addEventListener('click', abrirBusca);
+  $('#buscar2').addEventListener('click', abrirBusca);
+
+  // ---------- agenda da equipe (Google Agenda) e reunião rápida (Google Meet) ----------
+  // As agendas de cada pessoa e a sala fixa do Meet ficam salvas neste navegador.
+  const CORES_AGENDA = ['#0E5B66', '#C8963E', '#E4573D', '#2563EB', '#16A34A', '#7C3AED'];
+  let agenda = { pessoas: [], sala: '', modo: '' };
+  try { agenda = Object.assign(agenda, JSON.parse(lerGuardado('agenda-v1') || '{}')); } catch (e) {}
+  if (!Array.isArray(agenda.pessoas)) agenda.pessoas = [];
+  const modoAgenda = () => agenda.modo || (matchMedia('(max-width: 760px)').matches ? 'AGENDA' : 'WEEK');
+  const guardarAgenda = () => guardar('agenda-v1', JSON.stringify(agenda));
+  function urlAgenda() {
+    const p = new URLSearchParams({ ctz: 'America/Sao_Paulo', mode: modoAgenda(), wkst: '2', hl: 'pt_BR', showTitle: '0', showPrint: '0', showTabs: '0', showCalendars: '0', showTz: '0' });
+    agenda.pessoas.forEach(pp => { p.append('src', pp.id); p.append('color', pp.cor); });
+    return 'https://calendar.google.com/calendar/embed?' + p.toString();
+  }
+
+  // ---------- abas da barra lateral: Início e Agenda (o endereço guarda a aba: /#agenda). O CRM abre direto. ----------
+  const vistaAtual = () => location.hash === '#agenda' ? 'agenda' : 'inicio';
+  function pintarLado() {
+    const v = vistaAtual(), n = esperando();
+    const aba = (id, nome, i) => `<a class="lado-btn tap${id === v ? ' ativo' : ''}" href="#${id === 'inicio' ? '' : id}" aria-label="${nome}"${id === v ? ' aria-current="page"' : ''}>${svg(i)}<span class="dica">${nome}${id === 'agenda' ? '<span class="k">Alt 2</span>' : ''}</span></a>`;
+    $('#lado').innerHTML = aba('inicio', 'Início', IC.inicio)
+      + `<a class="lado-btn tap" href="${CRM}" data-id="crm" aria-label="CRM${n ? ` (${n} esperando)` : ''}">${svg(IC.pessoas)}${n ? `<span class="bolha">${n}</span>` : ''}<span class="dica">CRM<span class="k">Alt 1</span></span></a>`
+      + aba('agenda', 'Agenda', IC.calendario);
+  }
+  function mostrarVista() {
+    const v = vistaAtual();
+    $('#v-inicio').hidden = v !== 'inicio';
+    $('#agenda').hidden = v !== 'agenda';
+    pintarLado();
+    scrollTo(0, 0);
+  }
+  addEventListener('hashchange', mostrarVista);
+  function irParaAgenda() { if (vistaAtual() === 'agenda') mostrarVista(); else location.hash = 'agenda'; }
+
+  // calendário do mês: semana começa na segunda, com os feriados nacionais; tocar num dia cria um compromisso no Google Agenda
+  const FERIADOS = { '1-1': 'Confraternização Universal', '4-21': 'Tiradentes', '5-1': 'Dia do Trabalho', '9-7': 'Independência', '10-12': 'Nossa Senhora Aparecida', '11-2': 'Finados', '11-15': 'Proclamação da República', '11-20': 'Consciência Negra', '12-25': 'Natal' };
+  function pascoa(ano) {
+    const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    return new Date(ano, Math.floor((h + l - 7 * m + 114) / 31) - 1, (h + l - 7 * m + 114) % 31 + 1);
+  }
+  function feriado(dt) {
+    const fixo = FERIADOS[(dt.getMonth() + 1) + '-' + dt.getDate()];
+    if (fixo) return fixo;
+    const dias = Math.round((new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()) - pascoa(dt.getFullYear())) / 86400000);
+    return { '-47': 'Carnaval', '-2': 'Sexta-feira Santa', '60': 'Corpus Christi' }[dias] || '';
+  }
+  let calMes = new Date(); calMes.setDate(1);
+  function calendarioHTML(mini) {
+    const ano = calMes.getFullYear(), mes = calMes.getMonth(), hoje = new Date().toDateString();
+    const desloc = (new Date(ano, mes, 1).getDay() + 6) % 7;
+    const dias = Array.from({ length: 42 }, (_, k) => new Date(ano, mes, 1 - desloc + k));
+    if (dias[35].getMonth() !== mes) dias.length = 35; // a 6ª semana só entra se tiver dia do mês
+    const ymd = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    const nomeMes = new Date(ano, mes, 1).toLocaleDateString('pt-BR', { month: 'long' }), nome = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + ' de ' + ano;
+    return `<div class="cal-cab"><b>${esc(nome)}</b><div class="cal-nav">
+        <button type="button" class="tap" data-cal="-1" aria-label="Mês anterior">${svg(IC.voltar, 2.2)}</button>
+        ${mini ? '' : '<button type="button" class="tap" data-cal="0">Hoje</button>'}
+        <button type="button" class="tap" data-cal="1" aria-label="Próximo mês">${svg(IC.avancar, 2.2)}</button></div></div>
+      <div class="cal-sem" aria-hidden="true">${['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map(n => `<span>${mini ? n[0] : n}</span>`).join('')}</div>
+      <div class="cal-grade">${dias.map(d => {
+        const f = feriado(d), fim = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+        const cls = ['cal-dia', 'tap', d.getMonth() !== mes && 'fora', d.getDay() % 6 === 0 && 'fds', d.toDateString() === hoje && 'hoje', f && 'feriado'].filter(Boolean).join(' ');
+        const rotulo = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) + (f ? ' · ' + f : '') + ' · agendar visita ou compromisso';
+        return `<a class="${cls}" href="${AGENDA_NOVO}?dates=${ymd(d)}/${ymd(fim)}" target="_blank" rel="noopener" aria-label="${esc(rotulo)}" title="${esc(rotulo)}">${d.getDate()}${f ? `<small>${esc(f)}</small>` : ''}</a>`;
+      }).join('')}</div>`;
+  }
+  function pintarCalendario() {
+    const mini = agenda.pessoas.length > 0, onde = mini ? $('#cal-mini') : $('#ag-cal');
+    $('#cal-mini-card').hidden = !mini;
+    onde.innerHTML = calendarioHTML(mini);
+    $$('[data-cal]', onde).forEach(b => b.addEventListener('click', () => {
+      const n = +b.dataset.cal;
+      if (n) calMes.setMonth(calMes.getMonth() + n); else { calMes = new Date(); calMes.setDate(1); }
+      pintarCalendario();
+    }));
+  }
+  function pintarAgenda() {
+    $$('#ag-modo button').forEach(b => { const on = b.dataset.modo === modoAgenda(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    $('#ag-modo').hidden = !agenda.pessoas.length;
+    const card = $('#ag-card');
+    if (!agenda.pessoas.length) {
+      card.innerHTML = `<div class="cal"><div id="ag-cal"></div>
+          <div class="cal-aviso"><span>Conecte o Google Agenda dos corretores para ver as visitas de todo mundo aqui.</span>
+          <button type="button" class="b-salvar tap" id="ag-conectar">${svg(IC.mais, 2.4)} Conectar agendas</button></div>
+        </div>`;
+      $('#ag-conectar').addEventListener('click', () => configurarAgenda());
+    } else {
+      card.innerHTML = `<iframe class="ag-frame" title="Agenda da equipe no Google Agenda" src="${esc(urlAgenda())}" loading="lazy"></iframe>
+        <div class="ag-rodape">
+          <div class="ag-pessoas">${agenda.pessoas.map(pp => `<span class="ag-pessoa"><i style="background:${esc(pp.cor)}"></i>${esc(pp.nome || pp.id)}</span>`).join('')}</div>
+          <div class="ag-links">
+            <a href="${AGENDA_NOVO}" target="_blank" rel="noopener">${svg(IC.mais, 2.2)} Novo compromisso</a>
+            <a href="${AGENDA_GOOGLE}" target="_blank" rel="noopener">${svg(IC.externo, 2)} Abrir no Google Agenda</a>
+          </div>
+        </div>`;
+    }
+    pintarCalendario();
+    pintarMeet();
+  }
+  function pintarMeet() {
+    const sala = agenda.sala;
+    $('#meet-card').innerHTML = `
+      <div class="meet-topo"><span class="meet-ic cor-acento">${svg(IC.casa, 1.9)}</span><div><b>Visitas e reuniões</b><small>Google Agenda e Google Meet</small></div></div>
+      <a class="meet-btn principal tap" href="${AGENDA_NOVO}?text=${encodeURIComponent('Visita: ')}" target="_blank" rel="noopener">${svg(IC.casa, 2.1)} Agendar visita</a>
+      <a class="meet-btn tap" href="${MEET_NOVA}" target="_blank" rel="noopener">${svg(IC.video, 2)} Começar reunião agora</a>
+      ${sala
+        ? `<div class="meet-sala"><a class="meet-btn tap" href="${esc(sala)}" target="_blank" rel="noopener">${svg(IC.pessoas, 2)} Sala da equipe</a><button type="button" class="meet-copiar tap" id="meet-copiar" aria-label="Copiar o link da sala">${svg(IC.copiar, 2)}</button></div>`
+        : `<button type="button" class="meet-btn tap" id="meet-definir">${svg(IC.pessoas, 2)} Definir a sala fixa da equipe</button>`}
+      <p class="meet-nota">Abre com a conta Google conectada neste navegador.</p>`;
+    const cp = $('#meet-copiar');
+    if (cp) cp.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(sala); avisar('Link da sala copiado'); } catch (e) { avisar('Não consegui copiar o link'); }
+    });
+    const df = $('#meet-definir');
+    if (df) df.addEventListener('click', () => configurarAgenda('sala'));
+  }
+  function configurarAgenda(foco) {
+    const rascunho = agenda.pessoas.map(p => ({ ...p }));
+    if (!rascunho.length) rascunho.push({ nome: '', id: '', cor: CORES_AGENDA[0] });
+    const fundo = document.createElement('div'); fundo.className = 'fundo';
+    const fl = document.createElement('div'); fl.className = 'folha'; fl.setAttribute('role', 'dialog'); fl.setAttribute('aria-label', 'Configurar a agenda');
+    const linhas = () => rascunho.map((p, i) => `<div class="ag-linha" data-i="${i}">
+        <button type="button" class="ag-cor tap" data-cor="${i}" style="background:${esc(p.cor)}" aria-label="Trocar a cor de ${esc(p.nome || 'pessoa ' + (i + 1))}"></button>
+        <input class="campo" data-campo="nome" value="${esc(p.nome)}" placeholder="Nome" aria-label="Nome da pessoa ${i + 1}" autocomplete="off">
+        <input class="campo" data-campo="id" value="${esc(p.id)}" placeholder="E-mail ou ID da agenda" aria-label="ID da agenda da pessoa ${i + 1}" inputmode="email" autocapitalize="off" autocomplete="off">
+        <button type="button" class="ag-tirar tap" data-tirar="${i}" aria-label="Tirar ${esc(p.nome || 'esta pessoa')}">${svg(IC.lixo, 2)}</button>
+      </div>`).join('');
+    fl.innerHTML = `<div class="alca"></div><h3>Agenda da equipe</h3>
+      <form id="f-ag" novalidate>
+        <p class="ag-ajuda">No Google Agenda, abra <b>Configurações</b>, clique na agenda do corretor e copie o <b>ID da agenda</b> (em "Integrar agenda"). Para aparecer aqui, a agenda precisa estar compartilhada com a conta Google aberta neste navegador.</p>
+        <span class="rot">Corretores e equipe</span>
+        <div id="ag-linhas">${linhas()}</div>
+        <button type="button" class="ag-mais tap" id="ag-mais">${svg(IC.mais, 2.4)} Adicionar pessoa</button>
+        <label for="ag-sala">Sala fixa do Meet (opcional)</label>
+        <input class="campo" id="ag-sala" value="${esc(agenda.sala || '')}" placeholder="https://meet.google.com/abc-defg-hij" inputmode="url" autocapitalize="off" autocomplete="off">
+        <p class="erro-f" id="ag-erro" role="alert"></p>
+        <div class="fim-folha"><button type="button" class="b-cancelar tap" id="ag-cancelar">Cancelar</button><button class="b-salvar tap">Salvar</button></div>
+      </form>`;
+    document.body.append(fundo, fl);
+    requestAnimationFrame(() => { fundo.classList.add('on'); fl.classList.add('on'); });
+    const antesFoco = document.activeElement;
+    const fechar = () => {
+      fundo.classList.remove('on'); fl.classList.remove('on'); setTimeout(() => { fundo.remove(); fl.remove(); }, 500);
+      if (antesFoco && antesFoco.isConnected && antesFoco.focus) antesFoco.focus({ preventScroll: true });
+    };
+    fundo.addEventListener('click', fechar); $('#ag-cancelar', fl).addEventListener('click', fechar);
+    fl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); fechar(); } });
+    fl.addEventListener('input', () => { $('#ag-erro', fl).textContent = ''; });
+    const ler = () => $$('.ag-linha', fl).forEach(l => { const p = rascunho[+l.dataset.i]; p.nome = $('[data-campo="nome"]', l).value.trim(); p.id = $('[data-campo="id"]', l).value.trim(); });
+    const redesenha = () => { $('#ag-linhas', fl).innerHTML = linhas(); };
+    $('#ag-linhas', fl).addEventListener('click', e => {
+      const cor = e.target.closest('[data-cor]'), tirar = e.target.closest('[data-tirar]');
+      if (!cor && !tirar) return;
+      ler();
+      if (cor) { const p = rascunho[+cor.dataset.cor]; p.cor = CORES_AGENDA[(CORES_AGENDA.indexOf(p.cor) + 1) % CORES_AGENDA.length]; }
+      if (tirar) rascunho.splice(+tirar.dataset.tirar, 1);
+      redesenha();
+    });
+    $('#ag-mais', fl).addEventListener('click', () => {
+      ler();
+      rascunho.push({ nome: '', id: '', cor: CORES_AGENDA[rascunho.length % CORES_AGENDA.length] });
+      redesenha();
+      const nomes = $$('.ag-linha [data-campo="nome"]', fl);
+      nomes[nomes.length - 1].focus();
+    });
+    setTimeout(() => { const f = foco === 'sala' ? $('#ag-sala', fl) : $('.ag-linha [data-campo="id"]', fl); if (f) f.focus(); }, 350);
+    $('#f-ag', fl).addEventListener('submit', e => {
+      e.preventDefault();
+      ler();
+      const erro = $('#ag-erro', fl), pessoas = rascunho.filter(p => p.id);
+      const ruim = pessoas.find(p => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.id));
+      if (ruim) { erro.textContent = `"${ruim.id}" não parece um ID de agenda. Use o e-mail da pessoa ou o ID que termina em @group.calendar.google.com.`; return; }
+      const sala = $('#ag-sala', fl).value.trim();
+      if (sala && !/^https:\/\/meet\.google\.com\/[a-z0-9-]+/i.test(sala)) { erro.textContent = 'O link da sala precisa começar com https://meet.google.com/'; return; }
+      agenda.pessoas = pessoas.map(p => ({ nome: p.nome || p.id.split('@')[0], id: p.id, cor: p.cor }));
+      agenda.sala = sala;
+      guardarAgenda(); pintarAgenda(); pintarWidgets(true); fechar();
+      avisar(pessoas.length ? 'Agenda conectada' : 'Agenda salva');
+    });
+  }
+  $('#ag-config').innerHTML = svg(IC.engrenagem);
+  $('#ag-config').addEventListener('click', () => configurarAgenda());
+  $$('#ag-modo button').forEach(b => b.addEventListener('click', () => { agenda.modo = b.dataset.modo; guardarAgenda(); pintarAgenda(); }));
+
+  // ---------- tema e conta ----------
+  function aplicarTema(escuro) {
+    document.documentElement.dataset.theme = escuro ? 'dark' : 'light';
+    $('#tema').innerHTML = svg(escuro ? IC.sol : IC.lua);
+    $('#tema').setAttribute('aria-label', escuro ? 'Modo claro' : 'Modo escuro');
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', escuro ? '#091416' : '#F3F5F4');
+  }
+  $('#tema').addEventListener('click', () => {
+    const escuro = document.documentElement.dataset.theme !== 'dark';
+    aplicarTema(escuro);
+    guardar('tema', escuro ? 'dark' : 'light');
+  });
+  $('#conta').addEventListener('click', async () => {
+    if (DEMO) { avisar('Exemplo: o que você mexer fica só neste navegador.'); return; }
+    if (!$('#conta').dataset.sair) { $('#conta').dataset.sair = '1'; avisar('Toque de novo para sair'); setTimeout(() => delete $('#conta').dataset.sair, 3000); return; }
+    try { await api('sair'); } catch (e) {}
+    entrada();
+  });
+
+  // ---------- números ao vivo: atualiza sozinho a cada minuto e quando você volta para a aba ----------
+  let atualizando = false;
+  async function atualizarNumeros() {
+    if (DEMO || atualizando || document.hidden || !$('#entrada').hidden || buscaAberta || document.querySelector('.folha')) return;
+    atualizando = true;
+    try {
+      const d = await api('dados');
+      if (d && d.numeros && JSON.stringify(d.numeros) !== JSON.stringify(numeros)) { numeros = d.numeros; desenhar(true); }
+    } catch (e) { if (e.status === 401) entrada(); }
+    atualizando = false;
+  }
+  setInterval(atualizarNumeros, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarNumeros(); });
+
+  // ---------- carregar e entrar ----------
+  async function carregar() {
+    try {
+      const d = await api('dados');
+      numeros = (d && d.numeros) || {};
+      $('#exemplo').hidden = !DEMO;
+      desenhar(true);
+    } catch (e) {
+      if (e.status === 401) return entrada();
+      avisar(e.message);
+    }
+  }
+  function entrada() {
+    const t = $('#entrada'); t.hidden = false;
+    if (DEMO) $('#e-sub').textContent = 'Exemplo: digite qualquer senha para entrar.';
+    setTimeout(() => $('#e-senha').focus(), 300);
+    $('#f-entrar').onsubmit = async ev => {
+      ev.preventDefault();
+      const btn = $('#e-ok'); btn.disabled = true; btn.textContent = 'Entrando…'; $('#e-erro').textContent = '';
+      try { await api('entrar', { senha: $('#e-senha').value }); t.hidden = true; $('#e-senha').value = ''; carregar(); }
+      catch (x) { $('#e-erro').textContent = x.message; $('#e-senha').select(); }
+      btn.disabled = false; btn.textContent = 'Entrar';
+    };
+  }
+
+  // ---------- primeira pintura ----------
+  const h = new Date().getHours();
+  $('#saudacao').textContent = (h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite') + (CFG.saudacao ? ', ' + CFG.saudacao : '');
+  $('#conta').textContent = INICIAIS;
+  $('#e-titulo').textContent = NOME_HUB;
+  $('#rodape').innerHTML = CFG.site ? `<a href="${esc(CFG.site)}" target="_blank" rel="noopener">${esc(CFG.empresa)}</a>` : esc(CFG.empresa);
+  if (CFG.logo) $$('[data-logo]').forEach(s => { const i = document.createElement('img'); i.src = CFG.logo; i.alt = ''; i.setAttribute('class', s.getAttribute('class') || ''); s.replaceWith(i); });
+  document.title = NOME_HUB + ' · ' + CFG.empresa;
+  const dt = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#data').textContent = dt.charAt(0).toUpperCase() + dt.slice(1);
+  aplicarTema(document.documentElement.dataset.theme === 'dark');
+  $('#buscar').innerHTML = svg(IC.busca);
+  $('#buscar2').insertAdjacentHTML('afterbegin', svg(IC.busca, 2.2));
+  if (/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '')) $('#buscar2 kbd').textContent = '⌘ K';
+  pintarAgenda();
+  mostrarVista();
+  desenhar();
+  (async () => {
+    try {
+      const s = await api('sessao');
+      if (s.logado) carregar(); else entrada();
+    } catch (e) { avisar(e.message); }
+  })();
+})();
+</script>
+</body>
+</html>
