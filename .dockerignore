@@ -1,2 +1,4 @@
 .git
 LEIA-ME.md
+server/node_modules
+server/test

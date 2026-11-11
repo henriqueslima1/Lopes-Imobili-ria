@@ -2,11 +2,15 @@
   "name": "hub-lopes-servidor",
   "private": true,
   "type": "module",
-  "description": "Servidor do Hub Lopes: entrega os arquivos de public_html. Login, banco, CRM e Asaas entram aqui depois.",
+  "description": "Servidor do Hub Lopes: arquivos do site, login (administrador e colaboradores), CRM e banco (Postgres).",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
   }
 }

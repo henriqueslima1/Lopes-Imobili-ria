@@ -1,84 +1,106 @@
 # Hub Lopes Imobiliária
 
-Tela inicial da equipe da Lopes Imobiliária, montada a partir do Hub ADM (repositório `hub-ferramentas`).
-Vieram só o layout e o jeito de usar. Nenhum dado, cartão ou ferramenta de lá veio junto.
+Hub da equipe da Lopes Imobiliária. Veio do Hub ADM (repositório `hub-ferramentas`) e do CRM (repositório `crm`),
+copiando só o layout e o funcionamento. Nenhum dado de lá veio junto: o banco começa vazio.
 
-Por enquanto o hub tem:
-
-| O quê | Onde | Para quê |
+| O quê | Onde | Quem vê |
 |---|---|---|
-| **Início** | barra lateral | saudação, resumo do dia, ícones das ferramentas e números do CRM |
-| **CRM** | ícone na tela inicial e atalho na barra lateral (com a bolha de leads esperando) | abre o CRM em `/crm/` |
-| **Agenda** | barra lateral (e ícone na tela inicial) | Google Agenda dos corretores, calendário do mês com feriados, agendar visita e reunião no Meet |
+| **Início** | barra lateral | todos: saudação, resumo do dia, ícone do CRM, leads esperando, follow-ups e vendas do mês |
+| **CRM** | ícone na tela inicial e atalho na barra lateral | todos: dashboard, quadro por etapa, leads e follow-ups |
+| **Agenda** | barra lateral | todos: Google Agenda dos corretores, calendário com feriados, agendar visita, Meet |
+| **Colaboradores** | barra lateral | só o administrador: cadastrar corretores, criar o acesso de cada um, vendas por corretor |
 
-Também tem busca rápida (`Ctrl K` ou `/`), atalhos `Alt 1` (CRM) e `Alt 2` (Agenda), tema claro/escuro e tela de entrada com senha.
+Também tem busca rápida (`Ctrl K` ou `/`), atalhos `Alt 1` (CRM), `Alt 2` (Agenda) e `Alt 3` (Colaboradores),
+tema claro/escuro e o menu da conta (trocar a senha e sair).
+
+## Login
+
+- **Administrador:** usuário e senha das variáveis `ADMIN_USUARIO` e `ADMIN_SENHA` do Railway.
+  O administrador é criado sozinho na primeira vez que o servidor sobe.
+- **Colaboradores:** o administrador cria em Colaboradores → Novo colaborador → "Pode entrar no hub".
+  O hub sugere o usuário e gera a senha. Depois de salvar, aparece o acesso pronto para enviar pelo WhatsApp ou copiar.
+- O usuário não diferencia maiúscula de minúscula (`Lopes` = `lopes`).
+- Entrar no hub também entra no CRM, e vice-versa: é o mesmo endereço e o mesmo login.
+- Tirar o acesso ou desativar um colaborador derruba a sessão dele na hora.
+- 8 senhas erradas seguidas do mesmo lugar bloqueiam por 15 minutos.
+- **Esqueceu a senha do administrador:** no Railway, defina `ADMIN_REDEFINIR_SENHA=1` e a senha nova em
+  `ADMIN_SENHA`, espere o servidor subir de novo e depois apague `ADMIN_REDEFINIR_SENHA`.
+
+## Vendas por corretor
+
+As vendas saem do CRM: lead na etapa **Venda**, com o nome do corretor em **Responsável** e o **Valor** preenchido.
+Quando um lead vira venda (na ficha ou arrastando no quadro), o CRM já pergunta o valor e o corretor.
+Mover vários leads de uma vez na página Leads não pergunta.
+
+- Os corretores que aparecem em "Responsável" são os colaboradores **ativos** (o nome liga a pessoa aos leads).
+- Renomear um colaborador leva os leads dele junto.
+- Lead cadastrado por um colaborador já fica com ele como responsável.
+- Vendas sem corretor aparecem num aviso em Colaboradores, com link para o CRM.
+- O histórico de cada lead mostra quem fez cada mudança.
 
 ## Arquivos
 
 ```
 public_html/
   index.html   o hub (tela, estilo e código num arquivo só)
-  marca.js     nome, logo e cores da imobiliária: o único arquivo a editar
+  crm/         o CRM (as 4 páginas .html são iguais de propósito: a tela sai do endereço)
+  marca.js     nome, logo e cores: o único arquivo a editar para trocar a marca
   senha.js     campo de senha sem preenchimento automático, com o olhinho
 server/
-  index.js     servidor Node (sem dependências) que entrega o public_html
+  index.js     servidor Node: entrega o site e responde /api.php (hub) e /crm/api.php (CRM)
+  db.js        Postgres: tabelas criadas sozinhas (usuarios, sessoes, leads, lead_historico, followups, config)
+  auth.js      login, sessões e o administrador inicial
+  rotas/       ações do hub (colaboradores, senha) e do CRM
+  test/        testes (precisam de um banco vazio só para teste)
 Dockerfile     o que o Railway usa para subir o servidor
 ```
 
-No Railway, o projeto **Lopes Imobiliária** sobe este repositório pelo `Dockerfile` a cada push.
-Por enquanto o servidor só entrega os arquivos. O `api.php` ainda não existe, então o hub abre em modo exemplo.
+## Railway
 
-## Ver funcionando (modo exemplo)
+Projeto **Lopes Imobiliária**: serviço `hub` (este repositório, pelo `Dockerfile`, a cada push) e serviço `Postgres`.
 
-Sem servidor, o hub abre em **modo exemplo**: qualquer senha entra, os números do CRM são de exemplo
-e tocar no CRM mostra um aviso em vez de abrir uma página vazia.
-
-```bash
-node server/index.js
-```
-
-Depois abra `http://localhost:8080/`.
+| Variável (serviço `hub`) | Para quê |
+|---|---|
+| `DATABASE_URL` | referência ao Postgres: `${{Postgres.DATABASE_URL}}` |
+| `ADMIN_USUARIO` | usuário do administrador (padrão `Lopes`) |
+| `ADMIN_SENHA` | senha inicial do administrador (mínimo 6 caracteres) |
+| `PORT` | `8080` (a porta do domínio) |
 
 ## Marca (`marca.js`)
 
 | Campo | O que muda |
 |---|---|
-| `empresa` | rodapé e título da aba |
-| `hub` | nome na tela de entrada ("Hub Lopes") |
-| `saudacao` | "Bom dia, **equipe**" |
-| `iniciais` | botão redondo da conta |
+| `empresa` | rodapé, título da aba e nome da conta do administrador |
+| `nomeHub` | nome na tela de entrada ("Hub Lopes") |
+| `hub` | para onde o "Voltar ao Hub" do CRM leva (`/`) |
+| `saudacao` | "Bom dia, **equipe**" do administrador (o colaborador vê o próprio nome) |
+| `iniciais` | botão redondo da conta do administrador |
 | `site` | link do rodapé e ação "Abrir o site" na busca (vazio = sem link) |
 | `logo` | imagem da logo na mesma pasta, ex.: `logo.png` (vazio = símbolo da casinha) |
-| `cor` | cor principal: botões, ícone do CRM, dia de hoje |
-| `acento` | cor de destaque: ícone da Agenda e detalhes |
+| `cor` | cor principal: botões, ícone do CRM, dia de hoje, gráficos |
+| `acento` | cor de destaque: cartão de vendas, detalhes |
 
-As outras cores (brilhos do fundo, versão escura, sombras) saem dessas duas.
-Para trocar a identidade inteira, basta mudar `cor` e `acento`.
+## Rodar no computador
 
-## O que o servidor precisa responder
+```bash
+cd server && npm install
+```
 
-A tela chama `api.php?acao=NOME` com POST e corpo em JSON. É o mesmo formato do Hub ADM:
+```bash
+DATABASE_URL=postgres://... ADMIN_USUARIO=Lopes ADMIN_SENHA=uma-senha node server/index.js
+```
 
-| Ação | Resposta |
-|---|---|
-| `sessao` | `{ "logado": true/false }` |
-| `entrar` | recebe `{ "senha" }`, responde `{ "ok": true }` ou status 401 com `{ "erro": "..." }` |
-| `sair` | `{ "ok": true }` |
-| `dados` | `{ "numeros": { "crm": { "novos", "responderam", "atrasados", "hoje" } } }` |
+Sem `DATABASE_URL`, o site abre mas não dá para entrar. Abrindo só os arquivos de `public_html`
+(sem o servidor), o hub e o CRM entram em **modo exemplo**: qualquer usuário e senha, dados de exemplo
+guardados só naquele navegador.
 
-- `novos` + `responderam` = leads esperando (bolha do CRM e primeiro cartão).
-- `hoje` + `atrasados` = follow-ups do dia (segundo cartão). Com atrasados, o número fica amarelo.
-- Sem `crm` na resposta, o hub mostra só o cartão da Agenda.
-- Status 401 em qualquer ação faz a tela pedir a senha de novo.
+Testes (um banco vazio só para teste; as tabelas são limpas, nunca aponte para o banco de verdade):
 
-Endereços do CRM que o hub usa: `/crm/`, `/crm/quadro.html`, `/crm/quadro.html?novo=1`,
-`/crm/quadro.html#col-respondeu` e `/crm/followups.html`. São os mesmos do CRM atual (repositório `crm`).
-
-A Agenda (pessoas, cores e sala fixa do Meet) fica salva em cada navegador.
-Cada pessoa configura uma vez no próprio computador.
+```bash
+cd server && TESTE_DATABASE_URL=postgres://... npm test
+```
 
 ## Próximos passos
 
-1. Servidor: login, Postgres e a rota `api.php`, reaproveitando o `server/` do `hub-ferramentas`.
-2. CRM da Lopes em `/crm/`.
-3. Assinatura mensal pelo Asaas: cobrança recorrente e aviso no hub quando o cartão não passar, com opção de pagar por Pix ou cartão.
+1. Definir o que só os colaboradores acessam (ex.: cada corretor ver só os próprios leads no CRM).
+2. Assinatura mensal pelo Asaas: cobrança recorrente e aviso no hub quando o cartão não passar, com Pix ou cartão.

@@ -1,11 +1,12 @@
 /* =====================================================================
-   MARCA: os dados da imobiliária, num lugar só.
+   MARCA: os dados da imobiliária, num lugar só. O hub e o CRM leem este arquivo.
    Troque os textos entre aspas, salve e envie o arquivo de novo para o servidor.
    Se a mudança não aparecer, recarregue a página com Ctrl+F5.
    ===================================================================== */
 window.MARCA = {
   empresa: 'Lopes Imobiliária', // nome da empresa: rodapé e título da aba
-  hub: 'Hub Lopes',             // nome do hub na tela de entrada (vazio = "Hub" + primeiro nome da empresa)
+  nomeHub: 'Hub Lopes',         // nome do hub na tela de entrada (vazio = "Hub" + primeiro nome da empresa)
+  hub: '/',                     // endereço do hub: o botão "Voltar ao Hub" do CRM leva para cá
   saudacao: 'equipe',           // "Bom dia, equipe"
   iniciais: 'LI',               // botão redondo da conta (vazio = iniciais do nome)
   site: '',                     // site da imobiliária, ex.: 'https://www.lopesimobiliaria.com.br/' (vazio = rodapé sem link)

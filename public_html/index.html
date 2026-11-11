@@ -205,6 +205,7 @@ img { max-width: 100%; }
   padding: 10px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
   transform: translateY(105%); transition: transform .55s var(--ease); box-shadow: 0 -20px 60px rgba(21, 32, 31, .15), var(--reflexo); }
 .folha.on { transform: none; }
+.folha:focus { outline: none; }
 @media (min-width: 700px) { .folha { left: 50%; right: auto; bottom: 50%; width: 520px; border-radius: 30px; transform: translate(-50%, 60%) scale(.96); opacity: 0; transition: transform .5s var(--ease), opacity .3s; }
   .folha.on { transform: translate(-50%, 50%); opacity: 1; } }
 .alca { width: 40px; height: 5px; border-radius: 3px; background: var(--borda2); margin: 0 auto 14px; }
@@ -348,9 +349,109 @@ img { max-width: 100%; }
   .ag-linha .ag-tirar { grid-column: 3; grid-row: 1; }
   .ag-linha [data-campo="id"] { grid-column: 1 / 4; grid-row: 2; }
 }
+/* ---------- escolhas em chips, chaves (liga/desliga) e campos lado a lado ---------- */
+.opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.opcoes button { height: 40px; padding: 0 14px; border-radius: var(--pill); border: 1px solid var(--borda2); font-size: 14px; font-weight: 600; color: var(--suave); }
+.opcoes button.on { background: var(--pri-claro); border-color: var(--pri2); color: var(--pri-texto); }
+.duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.duas > div { display: grid; gap: 8px; align-content: start; }
+@media (max-width: 520px) { .duas { grid-template-columns: minmax(0, 1fr); } }
+.secao { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--apagado); margin: 14px 2px 0; }
+.ajuda { font-size: 13px; color: var(--suave); margin: 0 2px; line-height: 1.5; }
+.chave-linha { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--campo-bg); border: 1px solid var(--borda2); cursor: pointer; }
+.chave-linha b { display: block; font-size: 15px; }
+.chave-linha small { display: block; font-size: 12.5px; color: var(--suave); }
+.chave { position: relative; width: 50px; height: 30px; flex: none; }
+.chave input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.chave i { position: absolute; inset: 0; border-radius: 15px; background: var(--borda2); transition: background .25s; pointer-events: none; }
+.chave i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .2); transition: transform .3s var(--spring); }
+.chave input:checked + i { background: var(--pri); }
+.chave input:checked + i::after { transform: translateX(20px); }
+.chave input:focus-visible + i { outline: 3px solid color-mix(in srgb, var(--pri) 50%, transparent); outline-offset: 2px; }
+.campo-acao { display: flex; gap: 8px; }
+.campo-acao .campo { flex: 1; min-width: 0; }
+.b-mini { height: 50px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--borda2); background: var(--forte); font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.b-mini svg { width: 16px; height: 16px; }
+.b-excluir { width: 100%; height: 48px; border-radius: 16px; color: var(--erro); font-weight: 600; margin-top: 4px; }
+.b-novo { height: 42px; padding: 0 18px; border-radius: var(--pill); background: var(--pri); color: #fff; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 10px 24px var(--brilho-marca); white-space: nowrap; }
+.b-novo svg { width: 16px; height: 16px; }
+
+/* ---------- aba Colaboradores ---------- */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi { border-radius: 24px; padding: 18px 20px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: surge .7s var(--ease) both; min-width: 0; }
+.kpi small { display: block; font-size: 13px; font-weight: 600; color: var(--suave); }
+.kpi b { display: block; font-size: 28px; font-weight: 800; letter-spacing: -.04em; margin-top: 4px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi p { font-size: 12.5px; color: var(--suave); margin-top: 4px; }
+.kpi.destaque { background: var(--widget2-bg); border-color: transparent; color: var(--widget2-txt); }
+.kpi.destaque small, .kpi.destaque p { color: var(--widget2-sub); }
+.colabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.colab { position: relative; display: flex; flex-direction: column; gap: 14px; width: 100%; text-align: left; border-radius: 26px; padding: 18px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); transition: transform .4s var(--spring), border-color .2s; animation: surge .7s var(--ease) both; animation-delay: var(--d, 0s); }
+@media (hover: hover) { .colab:hover { transform: translateY(-3px); border-color: var(--borda2); } }
+.colab.inativo { opacity: .62; }
+.colab-topo { display: flex; align-items: center; gap: 12px; padding-right: 34px; }
+.avatar { width: 46px; height: 46px; border-radius: 16px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px; flex: none; background: var(--av, var(--pri)); }
+.colab-nome { min-width: 0; flex: 1; }
+.colab-nome b, .colab-nome small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.colab-nome b { font-size: 16px; }
+.colab-nome small { font-size: 13px; color: var(--suave); }
+.pos { position: absolute; top: 16px; right: 16px; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; display: grid; place-items: center; font-size: 12.5px; font-weight: 800; background: var(--leve); color: var(--suave); }
+.pos.p1 { background: color-mix(in oklab, var(--acento) 28%, transparent); color: color-mix(in oklab, var(--acento) 70%, var(--texto)); }
+.colab-venda b { font-size: 26px; font-weight: 800; letter-spacing: -.04em; }
+.colab-venda small { font-size: 13px; color: var(--suave); margin-left: 6px; }
+.barra { height: 8px; border-radius: 4px; background: var(--leve); overflow: hidden; }
+.barra i { display: block; height: 100%; width: var(--p, 0%); border-radius: 4px; background: linear-gradient(90deg, var(--pri2), var(--pri)); }
+.colab-pe { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--suave); }
+.colab-pe span { display: inline-flex; align-items: center; gap: 6px; }
+.selo { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: var(--pill); white-space: nowrap; }
+.selo.ok { background: var(--ok-bg); color: var(--ok); }
+.selo.sem { background: var(--leve); color: var(--suave); }
+.selo.off { background: var(--atencao-bg); color: var(--atencao); }
+.aviso-linha { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; border-radius: 18px; background: var(--atencao-bg); color: var(--atencao); font-size: 14px; font-weight: 600; }
+.aviso-linha a { text-decoration: underline; text-underline-offset: 3px; }
+.vazio-card { text-align: center; padding: 44px 22px; border-radius: 30px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.vazio-card .ic { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 22px; display: grid; place-items: center; color: #fff; }
+.vazio-card .ic svg { width: 30px; height: 30px; }
+.vazio-card h3 { font-size: 22px; letter-spacing: -.03em; }
+.vazio-card p { color: var(--suave); font-size: 15px; max-width: 440px; margin: 6px auto 20px; }
+.carregando-c { padding: 40px; text-align: center; color: var(--suave); }
+@media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .colabs { grid-template-columns: minmax(0, 1fr); }
+  .kpi { padding: 14px 16px; border-radius: 20px; }
+  .kpi b { font-size: 22px; }
+  .painel-acoes { flex-wrap: wrap; }
+  .painel-acoes .b-novo { margin-left: auto; }
+}
+
+/* ---------- ficha do colaborador, acesso criado e conta ---------- */
+.ficha-topo { display: flex; align-items: center; gap: 14px; margin: 4px 2px 16px; }
+.ficha-topo .avatar { width: 56px; height: 56px; border-radius: 18px; font-size: 18px; }
+.ficha-topo b { display: block; font-size: 20px; letter-spacing: -.02em; }
+.ficha-topo small { display: block; font-size: 13.5px; color: var(--suave); }
+.mini-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mini-kpis div { padding: 12px; border-radius: 16px; background: var(--campo-bg); min-width: 0; }
+.mini-kpis small { display: block; font-size: 12px; color: var(--suave); font-weight: 600; }
+.mini-kpis b { display: block; font-size: 18px; font-weight: 800; letter-spacing: -.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lista-simples { list-style: none; display: grid; gap: 6px; }
+.lista-simples li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--campo-bg); font-size: 14px; }
+.lista-simples li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista-simples li small { color: var(--suave); }
+.lista-simples li b { white-space: nowrap; }
+.contatos { display: grid; gap: 6px; }
+.contatos > a, .contatos > span { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 4px 2px; }
+.contatos svg { width: 16px; height: 16px; color: var(--suave); flex: none; }
+.contatos a { color: var(--destaque); font-weight: 600; }
+.credenciais { display: grid; gap: 4px; padding: 14px 16px; border-radius: 16px; background: var(--pri-claro); color: var(--pri-texto); font-size: 15px; }
+.credenciais b { font-weight: 800; }
+.credenciais code { font: 600 15px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; word-break: break-all; }
+.item-conta { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border-radius: 16px; background: var(--campo-bg); border: 1px solid var(--borda); font-weight: 600; font-size: 15px; text-align: left; }
+.item-conta svg { width: 20px; height: 20px; flex: none; }
+.item-conta small { display: block; font-weight: 500; font-size: 12.5px; color: var(--suave); }
+.item-conta.perigo { color: var(--erro); }
+.folha .lista-botoes { display: grid; gap: 8px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .widget, .app-ic, .entrada-card, .ola .resumo, .ola .resumo .luz { animation: none; }
+  .widget, .app-ic, .entrada-card, .ola .resumo, .ola .resumo .luz, .kpi, .colab { animation: none; }
   * { transition-duration: .01ms !important; }
 }
 </style>
@@ -414,6 +515,17 @@ img { max-width: 100%; }
       </div>
     </section>
 
+    <section class="painel vista" id="colaboradores" hidden aria-labelledby="colab-titulo">
+      <div class="painel-cab">
+        <div><h2 id="colab-titulo">Colaboradores</h2><p>Corretores e equipe: cadastro, acesso ao hub e quanto cada um vendeu</p></div>
+        <div class="painel-acoes">
+          <div class="seg" id="colab-periodo" role="group" aria-label="Período das vendas"></div>
+          <button type="button" class="b-novo tap" id="colab-novo"></button>
+        </div>
+      </div>
+      <div id="colab-corpo"><p class="carregando-c">Carregando…</p></div>
+    </section>
+
     <p class="rodape" id="rodape"></p>
   </main>
 </div>
@@ -422,8 +534,9 @@ img { max-width: 100%; }
   <div class="entrada-card">
     <svg class="g" data-logo viewBox="0 0 100 100" aria-hidden="true"><use href="#logo-marca"/></svg>
     <h2 id="e-titulo">Hub</h2>
-    <p id="e-sub">Entre com a senha da equipe.</p>
+    <p id="e-sub">Entre com o seu usuário e senha.</p>
     <form id="f-entrar" novalidate>
+      <input class="campo" id="e-usuario" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Usuário" aria-label="Usuário">
       <input class="campo" id="e-senha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha">
       <p class="erro-f" id="e-erro" role="alert"></p>
       <button class="b-salvar tap" id="e-ok">Entrar</button>
@@ -439,20 +552,23 @@ img { max-width: 100%; }
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // tudo que o hub guarda no navegador usa este prefixo
-  const guardar = (k, v) => { try { localStorage.setItem('hub-imob-' + k, v); } catch (e) {} };
+  const guardar = (k, v) => { try { if (v === null) localStorage.removeItem('hub-imob-' + k); else localStorage.setItem('hub-imob-' + k, v); } catch (e) {} };
   const lerGuardado = k => { try { return localStorage.getItem('hub-imob-' + k); } catch (e) { return null; } };
 
   // ---------- marca: nome, site e logo vêm do marca.js ----------
-  const CFG = Object.assign({ empresa: 'Sua Imobiliária', hub: '', saudacao: 'equipe', iniciais: '', site: '', logo: '' }, (typeof MARCA === 'object' && MARCA) || {});
+  const CFG = Object.assign({ empresa: 'Sua Imobiliária', nomeHub: '', saudacao: 'equipe', iniciais: '', site: '', logo: '' }, (typeof MARCA === 'object' && MARCA) || {});
   CFG.empresa = String(CFG.empresa || 'Sua Imobiliária');
-  const NOME_HUB = String(CFG.hub || '').trim() || 'Hub ' + CFG.empresa.split(/\s+/)[0];
+  const NOME_HUB = String(CFG.nomeHub || '').trim() || 'Hub ' + CFG.empresa.split(/\s+/)[0];
   const INICIAIS = (String(CFG.iniciais || '').trim() || CFG.empresa.split(/\s+/).filter(p => p.length > 2).slice(0, 2).map(p => p[0]).join('') || 'H').toUpperCase().slice(0, 3);
+  const iniciaisDe = nome => { const p = String(nome || '').trim().split(/\s+/); return (((p[0] || '')[0] || '') + (p.length > 1 ? (p[p.length - 1][0] || '') : '')).toUpperCase(); };
+  const primeiroNome = nome => String(nome || '').trim().split(/\s+/)[0] || '';
 
   const svg = (d, w = 2) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const IC = {
     inicio: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
     pessoas: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5"/>',
-    agenda: '<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    equipe: '<circle cx="12" cy="7.5" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="4.5" cy="10" r="2.2"/><circle cx="19.5" cy="10" r="2.2"/><path d="M1.5 18a3.6 3.6 0 0 1 3.6-3.4M22.5 18a3.6 3.6 0 0 0-3.6-3.4"/>',
+    crm: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7v7M12 7v4M16 7v9"/>',
     calendario: '<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
     casa: '<path d="M3 11 12 4l9 7"/><path d="M5 9.5V19a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1V9.5"/>',
     funil: '<path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/>',
@@ -468,13 +584,19 @@ img { max-width: 100%; }
     copiar: '<rect x="8" y="8" width="13" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2.5 2.5 0 0 0 5.5 16H8"/>',
     voltar: '<path d="m15 18-6-6 6-6"/>',
     avancar: '<path d="m9 18 6-6-6-6"/>',
-    lixo: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3"/>'
+    lixo: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3"/>',
+    lapis: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/>',
+    chave: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/>',
+    sair: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+    telefone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+    email: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+    whats: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.5 9.5c.5 2 2 3.5 4 4l1.2-1.2 2 1-.5 1.7c-3.5.2-7.4-3.7-7.2-7.2l1.7-.5 1 2Z"/>'
   };
 
   // ---------- endereços ----------
-  // O CRM mora no mesmo site do hub, em /crm/ (o servidor encaminha para o serviço do CRM).
+  // O CRM mora no mesmo site do hub, em /crm/ (mesmo login).
   const CRM = '/crm/', CRM_QUADRO = '/crm/quadro.html', CRM_NOVO = '/crm/quadro.html?novo=1',
-        CRM_FOLLOW = '/crm/followups.html', CRM_RESPONDEU = '/crm/quadro.html#col-respondeu';
+        CRM_FOLLOW = '/crm/followups.html', CRM_RESPONDEU = '/crm/quadro.html#col-respondeu', CRM_LEADS = '/crm/leads.html';
   const MEET_NOVA = 'https://meet.google.com/new';
   const AGENDA_GOOGLE = 'https://calendar.google.com/calendar/r';
   const AGENDA_NOVO = 'https://calendar.google.com/calendar/r/eventedit';
@@ -482,11 +604,14 @@ img { max-width: 100%; }
   const ehExterno = u => /^https?:\/\//i.test(u) && !u.includes(location.host);
   const alvo = u => ehExterno(u) ? ' target="_blank" rel="noopener"' : '';
 
-  // ferramentas do hub: por enquanto, CRM e Agenda
+  // ferramentas da tela inicial (a Agenda e os Colaboradores ficam só na barra lateral)
   const FERRAMENTAS = [
-    { id: 'crm', nome: 'CRM', desc: 'Leads e follow-ups', url: CRM, icone: 'pessoas', cor: 'marca' },
-    { id: 'agenda', nome: 'Agenda', desc: 'Visitas da equipe', url: '#agenda', icone: 'agenda', cor: 'acento' }
+    { id: 'crm', nome: 'CRM', desc: 'Leads e follow-ups', url: CRM, icone: 'pessoas', cor: 'marca' }
   ];
+
+  // ---------- quem está logado ----------
+  let EU = null; // { nome, usuario, papel, cargo }
+  const ehAdmin = () => !!EU && EU.papel === 'admin';
 
   // ---------- servidor (api.php); sem servidor vira exemplo guardado neste navegador ----------
   let DEMO = false, numeros = {}, falouComServidor = false;
@@ -496,7 +621,7 @@ img { max-width: 100%; }
     if (DEMO) return demo(acao, dados);
     let r;
     try {
-      r = await fetch('api.php?acao=' + acao, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
+      r = await fetch('/api.php?acao=' + acao, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
     } catch (e) {
       // se o servidor já respondeu antes, foi só a internet piscando: avisa em vez de cair no modo exemplo
       if (falouComServidor) { const x = new Error('Sem conexão com o servidor. Tente de novo em instantes.'); x.status = 0; throw x; }
@@ -511,11 +636,56 @@ img { max-width: 100%; }
     if (!r.ok) { const e = new Error(j.erro || 'Algo deu errado.'); e.status = r.status; throw e; }
     return j;
   }
-  function demo(acao) {
-    // no exemplo, depois da primeira entrada o navegador lembra e entra sozinho
-    if (acao === 'sessao') return { logado: lerGuardado('demo-logado') === '1' };
-    if (acao === 'entrar') { guardar('demo-logado', '1'); return { ok: true }; }
-    if (acao === 'dados') return { numeros: { crm: { novos: 4, responderam: 2, atrasados: 1, hoje: 3 } } };
+
+  // ---------- modo exemplo (sem servidor): tudo fica neste navegador ----------
+  const ADMIN_DEMO = { nome: 'Lopes', usuario: 'lopes', papel: 'admin', cargo: 'Administrador' };
+  function colabsDemo() {
+    try { const l = JSON.parse(lerGuardado('demo-colab') || 'null'); if (Array.isArray(l)) return l; } catch (e) {}
+    const dia = 86400000, iso = d => new Date(Date.now() - d * dia).toISOString();
+    const l = [
+      { id: 1, nome: 'Ana Paula Souza', cargo: 'Corretor', telefone: '(34) 99812-4410', email: '', creci: '12345-F', ativo: true, acesso: true, usuario: 'ana', ultimo_acesso: iso(.1), vendas: 2, vendido: 870000, andamento: 9, visitas: 2 },
+      { id: 2, nome: 'Rafael Costa', cargo: 'Corretor', telefone: '(34) 99134-2201', email: '', creci: '23456-F', ativo: true, acesso: true, usuario: 'rafael', ultimo_acesso: iso(2), vendas: 1, vendido: 290000, andamento: 6, visitas: 1 },
+      { id: 3, nome: 'Bruna Martins', cargo: 'Captador', telefone: '', email: '', creci: '', ativo: true, acesso: false, usuario: '', ultimo_acesso: null, vendas: 0, vendido: 0, andamento: 3, visitas: 0 }
+    ];
+    guardar('demo-colab', JSON.stringify(l)); return l;
+  }
+  function demo(acao, x) {
+    const falha = (msg, status = 400) => { throw Object.assign(new Error(msg), { status }); };
+    const logado = lerGuardado('demo-logado') === '1';
+    if (acao === 'sessao') return { logado, usuario: logado ? ADMIN_DEMO : null };
+    if (acao === 'entrar') { guardar('demo-logado', '1'); return { ok: true, usuario: ADMIN_DEMO }; }
+    if (acao === 'sair') { guardar('demo-logado', null); return { ok: true }; }
+    if (!logado) falha('Entre de novo com seu usuário e senha.', 401);
+    const lista = colabsDemo(), salvarLista = l => guardar('demo-colab', JSON.stringify(l));
+    if (acao === 'dados') return { usuario: ADMIN_DEMO, numeros: { crm: { novos: 4, responderam: 2, atrasados: 1, hoje: 3 }, vendas: { vendas: 3, total: 1160000 } } };
+    if (acao === 'colaboradores') {
+      const fator = { mes: 1, '90': 2, ano: 4, tudo: 6 }[x.periodo] || 1;
+      const cs = lista.map(c => ({ ...c, vendas: c.vendas * fator, vendido: c.vendido * fator }));
+      const t = cs.reduce((a, c) => ({ vendas: a.vendas + c.vendas, vendido: a.vendido + c.vendido, andamento: a.andamento + c.andamento }), { vendas: 0, vendido: 0, andamento: 0 });
+      return { periodo: x.periodo || 'mes', colaboradores: cs, resumo: { ...t, sem_responsavel: { vendas: 1, vendido: 180000 } }, cargos: CARGOS };
+    }
+    if (acao === 'colaborador') {
+      const c = lista.find(c => c.id === Number(x.id)) || falha('Colaborador não encontrado.', 404);
+      const vendas = Array.from({ length: c.vendas }, (_, i) => ({ id: i + 1, nome: ['Lucas Ferreira', 'Renata Gomes', 'João Pedro'][i % 3], valor: c.vendido / c.vendas, empreendimento: '', em: new Date(Date.now() - (i * 9 + 2) * 86400000).toISOString() }));
+      return { colaborador: c, vendas };
+    }
+    if (acao === 'colaborador_salvar') {
+      const nome = String(x.nome || '').trim(), usuario = String(x.usuario || '').trim().toLowerCase();
+      if (!nome) falha('Informe o nome do colaborador.');
+      if (lista.some(c => c.nome.toLowerCase() === nome.toLowerCase() && c.id !== Number(x.id))) falha('Já existe alguém cadastrado com esse nome. Use o nome completo para diferenciar.');
+      if (x.acesso && !/^[a-z0-9._-]{3,40}$/.test(usuario)) falha('O usuário precisa ter de 3 a 40 letras, números, ponto, hífen ou sublinhado (sem espaço nem acento).');
+      if (x.acesso && (usuario === 'lopes' || lista.some(c => c.usuario === usuario && c.id !== Number(x.id)))) falha('Esse usuário já está em uso. Escolha outro.');
+      if (x.acesso && x.senha && String(x.senha).length < 6) falha('A senha precisa ter pelo menos 6 caracteres.');
+      const atual = lista.find(c => c.id === Number(x.id));
+      if (x.acesso && !x.senha && !(atual && atual.acesso)) falha('Crie uma senha para o acesso.');
+      const dadosC = { nome, cargo: x.cargo || 'Corretor', telefone: x.telefone || '', email: x.email || '', creci: x.creci || '', ativo: x.ativo !== false, acesso: !!x.acesso, usuario: x.acesso ? usuario : (atual ? atual.usuario : '') };
+      if (atual) { Object.assign(atual, dadosC); salvarLista(lista); return { id: atual.id }; }
+      const id = Math.max(0, ...lista.map(c => c.id)) + 1;
+      lista.push({ id, ...dadosC, ultimo_acesso: null, vendas: 0, vendido: 0, andamento: 0, visitas: 0 }); salvarLista(lista);
+      return { id };
+    }
+    if (acao === 'colaborador_excluir') { salvarLista(lista.filter(c => c.id !== Number(x.id))); return { ok: true }; }
+    if (acao === 'senha_trocar') { if (String(x.nova || '').length < 6) falha('A senha nova precisa ter pelo menos 6 caracteres.'); return { ok: true }; }
     return { ok: true };
   }
 
@@ -524,6 +694,46 @@ img { max-width: 100%; }
     clearTimeout(avisar.t); avisar.t = setTimeout(() => el.classList.remove('on'), 2800);
   }
   const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+  const brl = v => 'R$ ' + Math.round(Number(v) || 0).toLocaleString('pt-BR');
+  const brlCurto = v => { v = Number(v) || 0; return v >= 1e6 ? 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : v >= 1e4 ? 'R$ ' + Math.round(v / 1e3).toLocaleString('pt-BR') + ' mil' : brl(v); };
+  const nomeMes = () => new Date().toLocaleDateString('pt-BR', { month: 'long' });
+  function haQuanto(iso) {
+    if (!iso) return '';
+    const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
+    if (s < 3600) return 'há ' + Math.max(1, Math.floor(s / 60)) + ' min';
+    if (s < 86400) return 'há ' + Math.floor(s / 3600) + ' h';
+    const n = Math.floor(s / 86400); return 'há ' + n + (n === 1 ? ' dia' : ' dias');
+  }
+  const CORES_AVATAR = ['#0E5B66', '#B9852F', '#E4573D', '#2563EB', '#15803D', '#0891B2', '#9A3412', '#475569'];
+  const corDe = nome => { let h = 0; for (const c of String(nome)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return CORES_AVATAR[h % CORES_AVATAR.length]; };
+  const wa = tel => { let d = String(tel || '').replace(/\D/g, ''); if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d; };
+
+  // ---------- folha (janela que sobe de baixo no celular e aparece no meio no computador) ----------
+  function abrirFolha(rotulo, html) {
+    const fundo = document.createElement('div'); fundo.className = 'fundo';
+    const fl = document.createElement('div'); fl.className = 'folha'; fl.setAttribute('role', 'dialog'); fl.setAttribute('aria-modal', 'true'); fl.setAttribute('aria-label', rotulo);
+    fl.tabIndex = -1;
+    fl.innerHTML = '<div class="alca"></div>' + html;
+    document.body.append(fundo, fl);
+    requestAnimationFrame(() => { fundo.classList.add('on'); fl.classList.add('on'); });
+    const antesFoco = document.activeElement;
+    // o foco vai para dentro da folha (teclado e leitor de tela), a não ser que um campo já tenha pego
+    setTimeout(() => { if (!fl.contains(document.activeElement)) fl.focus({ preventScroll: true }); }, 60);
+    let fechada = false;
+    // Esc fecha mesmo com o foco fora da folha
+    const tecla = e => { if (e.key === 'Escape' && !buscaAberta) { e.preventDefault(); fechar(); } };
+    const fechar = () => {
+      if (fechada) return; fechada = true;
+      document.removeEventListener('keydown', tecla);
+      fundo.classList.remove('on'); fl.classList.remove('on'); setTimeout(() => { fundo.remove(); fl.remove(); }, 500);
+      if (antesFoco && antesFoco.isConnected && antesFoco.focus) antesFoco.focus({ preventScroll: true });
+    };
+    fundo.addEventListener('click', fechar);
+    document.addEventListener('keydown', tecla);
+    // troca o conteúdo sem fechar (ficha → editar)
+    const trocar = novo => { fl.innerHTML = '<div class="alca"></div>' + novo; fl.scrollTop = 0; };
+    return { fl, fechar, trocar };
+  }
 
   // ---------- números do CRM ----------
   const crm = () => numeros.crm || null;
@@ -543,20 +753,22 @@ img { max-width: 100%; }
     resumo();
   }
 
-  // widgets: números do CRM + atalho da agenda
+  // widgets: números do CRM e as vendas do mês
   function pintarWidgets(quieto) {
-    const w = [], c = crm();
+    const w = [], c = crm(), v = numeros.vendas;
     if (c) {
       const n = esperando(), novos = Number(c.novos) || 0, resp = Number(c.responderam) || 0;
       w.push(`<a class="widget" data-id="crm" href="${CRM_QUADRO}"><small>Leads esperando você</small><b class="num"${n ? ` data-chave="esperando" data-conta="${n}"` : ''}>${n || 'Nenhum'}</b><p>${n ? [novos && plural(novos, 'novo', 'novos'), resp && plural(resp, 'respondeu', 'responderam')].filter(Boolean).join(' · ') : 'todo mundo já foi atendido'}</p></a>`);
       const hoje = Number(c.hoje) || 0, atr = Number(c.atrasados) || 0, fu = hoje + atr;
       w.push(`<a class="widget${atr ? ' w3' : ''}" data-id="crm" href="${CRM_FOLLOW}"><small>Follow-ups para hoje</small><b class="num"${fu ? ` data-chave="followups" data-conta="${fu}"` : ''}>${fu || 'Nenhum'}</b><p>${atr ? plural(atr, 'atrasado', 'atrasados') + ' de outros dias' : fu ? 'nada atrasado' : 'agenda de contatos em dia'}</p></a>`);
     }
-    const d = new Date(), f = feriado(d), dia = d.toLocaleDateString('pt-BR', { weekday: 'long' });
-    const pessoas = agenda.pessoas.length;
-    w.push(`<a class="widget w2" href="#agenda"><small>Agenda da equipe</small><b>${esc(dia.charAt(0).toUpperCase() + dia.slice(1).replace('-feira', ''))}, ${d.getDate()}</b><p>${f ? 'Feriado: ' + esc(f) : pessoas ? 'Ver visitas e compromissos de hoje' : 'Conecte as agendas dos corretores'}</p></a>`);
+    if (v) {
+      const total = Number(v.total) || 0, n = Number(v.vendas) || 0, link = ehAdmin() ? '#colaboradores' : CRM;
+      w.push(`<a class="widget w2" href="${link}"><small>Vendas em ${esc(nomeMes())}</small><b class="num"${total ? ` data-chave="vendido" data-fmt="brl" data-conta="${total}"` : ''}>${total ? brl(total) : n ? plural(n, 'venda', 'vendas') : 'Nenhuma'}</b><p>${n ? plural(n, 'venda fechada', 'vendas fechadas') + (ehAdmin() ? ' · ver por corretor' : '') : 'a primeira do mês vem aí'}</p></a>`);
+    }
     $('#widgets').classList.toggle('quieto', !!quieto);
     $('#widgets').innerHTML = w.join('');
+    $('#widgets').hidden = !w.length;
     $$('#widgets .widget').forEach((el, i) => el.style.animationDelay = (.14 + i * .06) + 's');
     animarNumeros();
   }
@@ -564,7 +776,7 @@ img { max-width: 100%; }
   function animarNumeros() {
     $$('#widgets [data-conta]').forEach(el => {
       const chave = el.dataset.chave, fim = Number(el.dataset.conta) || 0;
-      const fmt = n => Math.round(n).toLocaleString('pt-BR');
+      const fmt = el.dataset.fmt === 'brl' ? brl : n => Math.round(n).toLocaleString('pt-BR');
       const de = mostrado[chave];
       mostrado[chave] = fim;
       if (de === fim || calmo()) { el.textContent = fmt(fim); return; }
@@ -592,10 +804,10 @@ img { max-width: 100%; }
   }
 
   // ---------- abrir ferramentas ----------
-  // no modo exemplo o CRM ainda não está no ar: avisa em vez de abrir uma página vazia
+  // no modo exemplo o CRM não tem servidor: avisa em vez de abrir uma página vazia
   function crmNoExemplo() { avisar('Exemplo: aqui abre o CRM da equipe.'); }
   function abrirUrl(u) {
-    if (u === '#agenda') return irParaAgenda();
+    if (u.startsWith('#')) return irPara(u.slice(1));
     if (DEMO && ehCrm(u)) return crmNoExemplo();
     if (ehExterno(u)) window.open(u, '_blank', 'noopener'); else location.href = u;
   }
@@ -605,16 +817,23 @@ img { max-width: 100%; }
   }, true);
 
   // ---------- busca rápida: Ctrl+K, a tecla / ou a lupa ----------
-  const ACOES = [
-    { nome: 'Novo lead', desc: 'Cadastrar um lead no CRM', url: CRM_NOVO, i: IC.mais },
-    { nome: 'Quadro de leads', desc: 'O funil do CRM, etapa por etapa', url: CRM_QUADRO, i: IC.funil },
-    { nome: 'Follow-ups de hoje', desc: 'Contatos marcados no CRM', url: CRM_FOLLOW, i: IC.relogio },
-    { nome: 'Agenda da equipe', desc: 'Visitas e compromissos dos corretores', fazer: () => irParaAgenda(), i: IC.calendario },
-    { nome: 'Agendar visita', desc: 'Novo compromisso no Google Agenda', url: AGENDA_NOVO + '?text=' + encodeURIComponent('Visita: '), i: IC.casa },
-    { nome: 'Começar reunião no Meet', desc: 'Cria uma sala nova agora', url: MEET_NOVA, i: IC.video },
-    { nome: 'Trocar tema', desc: 'Alternar entre claro e escuro', fazer: () => $('#tema').click(), i: IC.lua }
-  ];
-  if (CFG.site) ACOES.push({ nome: 'Abrir o site', desc: String(CFG.site).replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, ''), url: CFG.site, i: IC.externo });
+  function acoesBusca() {
+    const a = [
+      { nome: 'Novo lead', desc: 'Cadastrar um lead no CRM', url: CRM_NOVO, i: IC.mais },
+      { nome: 'Quadro de leads', desc: 'O funil do CRM, etapa por etapa', url: CRM_QUADRO, i: IC.funil },
+      { nome: 'Follow-ups de hoje', desc: 'Contatos marcados no CRM', url: CRM_FOLLOW, i: IC.relogio },
+      { nome: 'Agenda da equipe', desc: 'Visitas e compromissos dos corretores', fazer: () => irPara('agenda'), i: IC.calendario },
+      { nome: 'Agendar visita', desc: 'Novo compromisso no Google Agenda', url: AGENDA_NOVO + '?text=' + encodeURIComponent('Visita: '), i: IC.casa },
+      { nome: 'Começar reunião no Meet', desc: 'Cria uma sala nova agora', url: MEET_NOVA, i: IC.video }
+    ];
+    if (ehAdmin()) a.push(
+      { nome: 'Colaboradores', desc: 'Corretores, acessos e vendas de cada um', fazer: () => irPara('colaboradores'), i: IC.equipe },
+      { nome: 'Novo colaborador', desc: 'Cadastrar um corretor e criar o acesso', fazer: () => { irPara('colaboradores'); setTimeout(() => editarColab(null), 250); }, i: IC.mais });
+    a.push({ nome: 'Trocar minha senha', desc: 'Senha de acesso ao hub', fazer: () => abrirConta('senha'), i: IC.chave });
+    a.push({ nome: 'Trocar tema', desc: 'Alternar entre claro e escuro', fazer: () => $('#tema').click(), i: IC.lua });
+    if (CFG.site) a.push({ nome: 'Abrir o site', desc: String(CFG.site).replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, ''), url: CFG.site, i: IC.externo });
+    return a;
+  }
   const semAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   let buscaAberta = null;
   function abrirBusca() {
@@ -624,7 +843,7 @@ img { max-width: 100%; }
     cx.innerHTML = `<div class="busca-topo">${svg(IC.busca)}<input id="b-q" placeholder="Buscar ferramenta ou ação…" autocomplete="off" aria-label="Buscar" aria-controls="b-lista"><kbd>Esc</kbd></div><ul class="busca-lista" id="b-lista" role="listbox"></ul>`;
     document.body.append(fundo, cx);
     requestAnimationFrame(() => { fundo.classList.add('on'); cx.classList.add('on'); });
-    const q = $('#b-q', cx), ul = $('#b-lista', cx), antesFoco = document.activeElement;
+    const q = $('#b-q', cx), ul = $('#b-lista', cx), antesFoco = document.activeElement, ACOES = acoesBusca();
     let itens = [], sel = 0;
     const fechar = () => {
       buscaAberta = null; fundo.classList.remove('on'); cx.classList.remove('on'); setTimeout(() => { fundo.remove(); cx.remove(); }, 350);
@@ -663,18 +882,42 @@ img { max-width: 100%; }
     fundo.addEventListener('click', fechar);
     pintar(); setTimeout(() => q.focus(), 60);
   }
+  // atalhos: Alt+1 CRM, Alt+2 Agenda, Alt+3 Colaboradores
+  const ATALHOS = { 1: () => abrirUrl(CRM), 2: () => irPara('agenda'), 3: () => ehAdmin() && irPara('colaboradores') };
   document.addEventListener('keydown', e => {
     const k = (e.key || '').toLowerCase(), foco = (document.activeElement && document.activeElement.tagName) || '';
     if ((e.ctrlKey || e.metaKey) && k === 'k') { e.preventDefault(); buscaAberta ? buscaAberta() : abrirBusca(); }
     else if (k === '/' && !e.ctrlKey && !e.metaKey && !/^(input|textarea|select)$/i.test(foco)) { e.preventDefault(); abrirBusca(); }
-    // Alt+1 abre o CRM, Alt+2 a Agenda
-    else if (e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-9]$/.test(e.code || '') && $('#entrada').hidden && !buscaAberta && !document.querySelector('.folha')) {
-      const f = FERRAMENTAS[Number(e.code.slice(5)) - 1];
-      if (f) { e.preventDefault(); abrirUrl(f.url); }
+    else if (e.altKey && !e.ctrlKey && !e.metaKey && /^Digit[1-3]$/.test(e.code || '') && $('#entrada').hidden && !buscaAberta && !document.querySelector('.folha')) {
+      e.preventDefault(); ATALHOS[e.code.slice(5)]();
     }
   });
   $('#buscar').addEventListener('click', abrirBusca);
   $('#buscar2').addEventListener('click', abrirBusca);
+
+  // ---------- abas da barra lateral: Início, Agenda e Colaboradores (o endereço guarda a aba: /#agenda). O CRM abre direto. ----------
+  const ABAS = { agenda: 'Agenda', colaboradores: 'Colaboradores' };
+  const vistaAtual = () => { const h = location.hash.slice(1); return h === 'agenda' ? 'agenda' : h === 'colaboradores' && ehAdmin() ? 'colaboradores' : 'inicio'; };
+  function pintarLado() {
+    const v = vistaAtual(), n = esperando();
+    const aba = (id, nome, i, k) => `<a class="lado-btn tap${id === v ? ' ativo' : ''}" href="#${id === 'inicio' ? '' : id}" aria-label="${nome}"${id === v ? ' aria-current="page"' : ''}>${svg(i)}<span class="dica">${nome}${k ? `<span class="k">Alt ${k}</span>` : ''}</span></a>`;
+    $('#lado').innerHTML = aba('inicio', 'Início', IC.inicio)
+      + `<a class="lado-btn tap" href="${CRM}" data-id="crm" aria-label="CRM${n ? ` (${n} esperando)` : ''}">${svg(IC.crm)}${n ? `<span class="bolha">${n}</span>` : ''}<span class="dica">CRM<span class="k">Alt 1</span></span></a>`
+      + aba('agenda', 'Agenda', IC.calendario, 2)
+      + (ehAdmin() ? aba('colaboradores', 'Colaboradores', IC.equipe, 3) : '');
+  }
+  function mostrarVista() {
+    const v = vistaAtual();
+    $('#v-inicio').hidden = v !== 'inicio';
+    $('#agenda').hidden = v !== 'agenda';
+    $('#colaboradores').hidden = v !== 'colaboradores';
+    document.title = (ABAS[v] ? ABAS[v] + ' · ' : '') + NOME_HUB + ' · ' + CFG.empresa;
+    pintarLado();
+    scrollTo(0, 0);
+    if (v === 'colaboradores' && $('#entrada').hidden) carregarColaboradores();
+  }
+  addEventListener('hashchange', mostrarVista);
+  function irPara(aba) { if (vistaAtual() === aba) mostrarVista(); else location.hash = aba; }
 
   // ---------- agenda da equipe (Google Agenda) e reunião rápida (Google Meet) ----------
   // As agendas de cada pessoa e a sala fixa do Meet ficam salvas neste navegador.
@@ -689,26 +932,6 @@ img { max-width: 100%; }
     agenda.pessoas.forEach(pp => { p.append('src', pp.id); p.append('color', pp.cor); });
     return 'https://calendar.google.com/calendar/embed?' + p.toString();
   }
-
-  // ---------- abas da barra lateral: Início e Agenda (o endereço guarda a aba: /#agenda). O CRM abre direto. ----------
-  const vistaAtual = () => location.hash === '#agenda' ? 'agenda' : 'inicio';
-  function pintarLado() {
-    const v = vistaAtual(), n = esperando();
-    const aba = (id, nome, i) => `<a class="lado-btn tap${id === v ? ' ativo' : ''}" href="#${id === 'inicio' ? '' : id}" aria-label="${nome}"${id === v ? ' aria-current="page"' : ''}>${svg(i)}<span class="dica">${nome}${id === 'agenda' ? '<span class="k">Alt 2</span>' : ''}</span></a>`;
-    $('#lado').innerHTML = aba('inicio', 'Início', IC.inicio)
-      + `<a class="lado-btn tap" href="${CRM}" data-id="crm" aria-label="CRM${n ? ` (${n} esperando)` : ''}">${svg(IC.pessoas)}${n ? `<span class="bolha">${n}</span>` : ''}<span class="dica">CRM<span class="k">Alt 1</span></span></a>`
-      + aba('agenda', 'Agenda', IC.calendario);
-  }
-  function mostrarVista() {
-    const v = vistaAtual();
-    $('#v-inicio').hidden = v !== 'inicio';
-    $('#agenda').hidden = v !== 'agenda';
-    pintarLado();
-    scrollTo(0, 0);
-  }
-  addEventListener('hashchange', mostrarVista);
-  function irParaAgenda() { if (vistaAtual() === 'agenda') mostrarVista(); else location.hash = 'agenda'; }
-
   // calendário do mês: semana começa na segunda, com os feriados nacionais; tocar num dia cria um compromisso no Google Agenda
   const FERIADOS = { '1-1': 'Confraternização Universal', '4-21': 'Tiradentes', '5-1': 'Dia do Trabalho', '9-7': 'Independência', '10-12': 'Nossa Senhora Aparecida', '11-2': 'Finados', '11-15': 'Proclamação da República', '11-20': 'Consciência Negra', '12-25': 'Natal' };
   function pascoa(ano) {
@@ -729,7 +952,7 @@ img { max-width: 100%; }
     const dias = Array.from({ length: 42 }, (_, k) => new Date(ano, mes, 1 - desloc + k));
     if (dias[35].getMonth() !== mes) dias.length = 35; // a 6ª semana só entra se tiver dia do mês
     const ymd = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
-    const nomeMes = new Date(ano, mes, 1).toLocaleDateString('pt-BR', { month: 'long' }), nome = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + ' de ' + ano;
+    const nm = new Date(ano, mes, 1).toLocaleDateString('pt-BR', { month: 'long' }), nome = nm.charAt(0).toUpperCase() + nm.slice(1) + ' de ' + ano;
     return `<div class="cal-cab"><b>${esc(nome)}</b><div class="cal-nav">
         <button type="button" class="tap" data-cal="-1" aria-label="Mês anterior">${svg(IC.voltar, 2.2)}</button>
         ${mini ? '' : '<button type="button" class="tap" data-cal="0">Hoje</button>'}
@@ -795,15 +1018,13 @@ img { max-width: 100%; }
   function configurarAgenda(foco) {
     const rascunho = agenda.pessoas.map(p => ({ ...p }));
     if (!rascunho.length) rascunho.push({ nome: '', id: '', cor: CORES_AGENDA[0] });
-    const fundo = document.createElement('div'); fundo.className = 'fundo';
-    const fl = document.createElement('div'); fl.className = 'folha'; fl.setAttribute('role', 'dialog'); fl.setAttribute('aria-label', 'Configurar a agenda');
     const linhas = () => rascunho.map((p, i) => `<div class="ag-linha" data-i="${i}">
         <button type="button" class="ag-cor tap" data-cor="${i}" style="background:${esc(p.cor)}" aria-label="Trocar a cor de ${esc(p.nome || 'pessoa ' + (i + 1))}"></button>
         <input class="campo" data-campo="nome" value="${esc(p.nome)}" placeholder="Nome" aria-label="Nome da pessoa ${i + 1}" autocomplete="off">
         <input class="campo" data-campo="id" value="${esc(p.id)}" placeholder="E-mail ou ID da agenda" aria-label="ID da agenda da pessoa ${i + 1}" inputmode="email" autocapitalize="off" autocomplete="off">
         <button type="button" class="ag-tirar tap" data-tirar="${i}" aria-label="Tirar ${esc(p.nome || 'esta pessoa')}">${svg(IC.lixo, 2)}</button>
       </div>`).join('');
-    fl.innerHTML = `<div class="alca"></div><h3>Agenda da equipe</h3>
+    const { fl, fechar } = abrirFolha('Configurar a agenda', `<h3>Agenda da equipe</h3>
       <form id="f-ag" novalidate>
         <p class="ag-ajuda">No Google Agenda, abra <b>Configurações</b>, clique na agenda do corretor e copie o <b>ID da agenda</b> (em "Integrar agenda"). Para aparecer aqui, a agenda precisa estar compartilhada com a conta Google aberta neste navegador.</p>
         <span class="rot">Corretores e equipe</span>
@@ -813,16 +1034,8 @@ img { max-width: 100%; }
         <input class="campo" id="ag-sala" value="${esc(agenda.sala || '')}" placeholder="https://meet.google.com/abc-defg-hij" inputmode="url" autocapitalize="off" autocomplete="off">
         <p class="erro-f" id="ag-erro" role="alert"></p>
         <div class="fim-folha"><button type="button" class="b-cancelar tap" id="ag-cancelar">Cancelar</button><button class="b-salvar tap">Salvar</button></div>
-      </form>`;
-    document.body.append(fundo, fl);
-    requestAnimationFrame(() => { fundo.classList.add('on'); fl.classList.add('on'); });
-    const antesFoco = document.activeElement;
-    const fechar = () => {
-      fundo.classList.remove('on'); fl.classList.remove('on'); setTimeout(() => { fundo.remove(); fl.remove(); }, 500);
-      if (antesFoco && antesFoco.isConnected && antesFoco.focus) antesFoco.focus({ preventScroll: true });
-    };
-    fundo.addEventListener('click', fechar); $('#ag-cancelar', fl).addEventListener('click', fechar);
-    fl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); fechar(); } });
+      </form>`);
+    $('#ag-cancelar', fl).addEventListener('click', fechar);
     fl.addEventListener('input', () => { $('#ag-erro', fl).textContent = ''; });
     const ler = () => $$('.ag-linha', fl).forEach(l => { const p = rascunho[+l.dataset.i]; p.nome = $('[data-campo="nome"]', l).value.trim(); p.id = $('[data-campo="id"]', l).value.trim(); });
     const redesenha = () => { $('#ag-linhas', fl).innerHTML = linhas(); };
@@ -852,13 +1065,186 @@ img { max-width: 100%; }
       if (sala && !/^https:\/\/meet\.google\.com\/[a-z0-9-]+/i.test(sala)) { erro.textContent = 'O link da sala precisa começar com https://meet.google.com/'; return; }
       agenda.pessoas = pessoas.map(p => ({ nome: p.nome || p.id.split('@')[0], id: p.id, cor: p.cor }));
       agenda.sala = sala;
-      guardarAgenda(); pintarAgenda(); pintarWidgets(true); fechar();
+      guardarAgenda(); pintarAgenda(); fechar();
       avisar(pessoas.length ? 'Agenda conectada' : 'Agenda salva');
     });
   }
   $('#ag-config').innerHTML = svg(IC.engrenagem);
   $('#ag-config').addEventListener('click', () => configurarAgenda());
   $$('#ag-modo button').forEach(b => b.addEventListener('click', () => { agenda.modo = b.dataset.modo; guardarAgenda(); pintarAgenda(); }));
+
+  // ---------- colaboradores (só o administrador): cadastro, acesso ao hub e vendas de cada um ----------
+  const CARGOS = ['Corretor', 'Gerente', 'Captador', 'Secretária', 'Financeiro', 'Outro'];
+  const PERIODOS = [['mes', 'Este mês'], ['90', '90 dias'], ['ano', 'Este ano'], ['tudo', 'Tudo']];
+  const NO_PERIODO = { mes: 'no mês', '90': 'em 90 dias', ano: 'no ano', tudo: 'desde o início' };
+  const colab = { periodo: ['mes', '90', 'ano', 'tudo'].includes(lerGuardado('colab-periodo')) ? lerGuardado('colab-periodo') : 'mes', lista: null, resumo: null };
+
+  async function carregarColaboradores() {
+    if (!ehAdmin()) return;
+    pintarPeriodo();
+    try {
+      const r = await api('colaboradores', { periodo: colab.periodo });
+      colab.lista = r.colaboradores; colab.resumo = r.resumo;
+      pintarColaboradores();
+    } catch (e) { if (e.status === 401) return entrada(); avisar(e.message); }
+  }
+  function pintarPeriodo() {
+    $('#colab-periodo').innerHTML = PERIODOS.map(([k, t]) => `<button type="button" data-p="${k}" class="${k === colab.periodo ? 'on' : ''}" aria-pressed="${k === colab.periodo}">${t}</button>`).join('');
+  }
+  $('#colab-periodo').addEventListener('click', e => {
+    const b = e.target.closest('[data-p]'); if (!b || b.dataset.p === colab.periodo) return;
+    colab.periodo = b.dataset.p; guardar('colab-periodo', colab.periodo);
+    carregarColaboradores();
+  });
+  $('#colab-novo').innerHTML = svg(IC.mais, 2.4) + ' Novo colaborador';
+  $('#colab-novo').addEventListener('click', () => editarColab(null));
+
+  function pintarColaboradores() {
+    const corpo = $('#colab-corpo'), lista = colab.lista || [], r = colab.resumo || {}, np = NO_PERIODO[colab.periodo];
+    if (!lista.length) {
+      corpo.innerHTML = `<div class="vazio-card"><span class="ic cor-marca">${svg(IC.equipe, 1.9)}</span>
+        <h3>Cadastre a sua equipe</h3>
+        <p>Coloque aqui os corretores e quem mais trabalha com você. Cada um pode ganhar um usuário e senha para entrar no hub, e as vendas do CRM aparecem por corretor.</p>
+        <button type="button" class="b-novo tap" id="colab-novo2">${svg(IC.mais, 2.4)} Cadastrar o primeiro</button></div>`;
+      $('#colab-novo2').addEventListener('click', () => editarColab(null));
+      return;
+    }
+    const ativos = lista.filter(c => c.ativo), comAcesso = ativos.filter(c => c.acesso).length;
+    const ordem = [...lista].sort((a, b) => (b.ativo - a.ativo) || (b.vendido - a.vendido) || (b.vendas - a.vendas) || a.nome.localeCompare(b.nome, 'pt-BR'));
+    const topo = Math.max(...ordem.map(c => c.vendido), 0);
+    let pos = 0;
+    const ticket = r.vendas ? r.vendido / r.vendas : 0;
+    corpo.innerHTML = `<div class="kpis">
+        <div class="kpi destaque"><small>Vendido ${np}</small><b class="num">${brlCurto(r.vendido)}</b><p>${plural(r.vendas || 0, 'venda', 'vendas')} da equipe</p></div>
+        <div class="kpi" style="animation-delay:.05s"><small>Ticket médio</small><b class="num">${ticket ? brlCurto(ticket) : '—'}</b><p>por venda ${np}</p></div>
+        <div class="kpi" style="animation-delay:.1s"><small>Leads em andamento</small><b class="num">${r.andamento || 0}</b><p>no funil do CRM agora</p></div>
+        <div class="kpi" style="animation-delay:.15s"><small>Equipe ativa</small><b class="num">${ativos.length}</b><p>${comAcesso} com acesso ao hub</p></div>
+      </div>
+      <div class="colabs">${ordem.map((c, i) => {
+        const nPos = c.ativo && c.vendido > 0 ? ++pos : 0;
+        const selo = !c.ativo ? '<span class="selo sem">Inativo</span>' : c.acesso ? '<span class="selo ok">Com acesso</span>' : '<span class="selo off">Sem acesso</span>';
+        const visto = c.ativo && c.acesso ? (c.ultimo_acesso ? 'entrou ' + haQuanto(c.ultimo_acesso) : 'ainda não entrou') : '';
+        return `<button type="button" class="colab${c.ativo ? '' : ' inativo'}" data-colab="${c.id}" style="--d:${.05 + i * .04}s" aria-label="${esc(c.nome)}: ${esc(brl(c.vendido))} vendidos ${np}">
+          ${nPos ? `<span class="pos${nPos === 1 ? ' p1' : ''}" title="${nPos}º em vendas ${np}">${nPos}º</span>` : ''}
+          <span class="colab-topo"><span class="avatar" style="--av:${corDe(c.nome)}">${esc(iniciaisDe(c.nome))}</span><span class="colab-nome"><b>${esc(c.nome)}</b><small>${esc(c.cargo)}${c.creci ? ' · CRECI ' + esc(c.creci) : ''}</small></span></span>
+          <span class="colab-venda"><b class="num">${brl(c.vendido)}</b><small>${plural(c.vendas, 'venda', 'vendas')} ${np}</small></span>
+          <span class="barra" aria-hidden="true"><i style="--p:${topo ? Math.max(2, Math.round(c.vendido * 100 / topo)) : 0}%"></i></span>
+          <span class="colab-pe"><span>${selo}${visto ? ' ' + esc(visto) : ''}</span><span>${plural(c.andamento, 'lead em andamento', 'leads em andamento')}</span></span>
+        </button>`;
+      }).join('')}</div>
+      ${r.sem_responsavel && r.sem_responsavel.vendas ? `<div class="aviso-linha"><span>${plural(r.sem_responsavel.vendas, 'venda', 'vendas')} ${np} (${brl(r.sem_responsavel.vendido)}) sem corretor no CRM. Defina o responsável no lead para contar aqui.</span><a href="${CRM_LEADS}?etapa=venda">Ver no CRM</a></div>` : ''}`;
+    $$('[data-colab]', corpo).forEach(b => b.addEventListener('click', () => abrirColab(Number(b.dataset.colab))));
+  }
+
+  // Ficha do colaborador: números, contatos e últimas vendas
+  async function abrirColab(id) {
+    const c0 = (colab.lista || []).find(c => c.id === id);
+    if (!c0) return;
+    const f = abrirFolha('Colaborador ' + c0.nome, `<p class="carregando-c">Carregando…</p>`);
+    let r;
+    try { r = await api('colaborador', { id }); } catch (e) { f.fechar(); if (e.status === 401) return entrada(); return avisar(e.message); }
+    const c = { ...c0, ...r.colaborador }, np = NO_PERIODO[colab.periodo];
+    f.trocar(`<div class="ficha-topo"><span class="avatar" style="--av:${corDe(c.nome)}">${esc(iniciaisDe(c.nome))}</span><div><b>${esc(c.nome)}</b><small>${esc(c.cargo)}${c.creci ? ' · CRECI ' + esc(c.creci) : ''}${c.ativo ? '' : ' · inativo'}</small></div></div>
+      <div class="mini-kpis"><div><small>Vendido ${np}</small><b>${brlCurto(c0.vendido)}</b></div><div><small>Vendas ${np}</small><b>${c0.vendas}</b></div><div><small>Em andamento</small><b>${c0.andamento}</b></div></div>
+      <p class="secao">Contato e acesso</p>
+      <div class="contatos">
+        ${c.telefone ? `<a href="${esc(wa(c.telefone))}" target="_blank" rel="noopener">${svg(IC.whats)}${esc(c.telefone)}</a>` : ''}
+        ${c.email ? `<a href="mailto:${esc(c.email)}">${svg(IC.email)}${esc(c.email)}</a>` : ''}
+        <span>${svg(IC.chave)}<span>${c.acesso ? `Entra no hub com o usuário <b>${esc(c.usuario)}</b>${c.ultimo_acesso ? ' · último acesso ' + esc(haQuanto(c.ultimo_acesso)) : ' · ainda não entrou'}` : 'Sem acesso ao hub'}</span></span>
+      </div>
+      <p class="secao">Últimas vendas</p>
+      ${r.vendas.length ? `<ul class="lista-simples">${r.vendas.map(v => `<li><span>${esc(v.nome || 'Lead')}${v.empreendimento ? ` <small>· ${esc(v.empreendimento)}</small>` : ''}</span><span><b>${v.valor != null ? esc(brl(v.valor)) : 'sem valor'}</b> <small>${esc(new Date(v.em).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }))}</small></span></li>`).join('')}</ul>`
+        : '<p class="ajuda">Nenhuma venda com o nome dele no CRM ainda. Quando um lead dele virar venda, aparece aqui.</p>'}
+      <div class="fim-folha"><button type="button" class="b-cancelar tap" data-f="fechar">Fechar</button><button type="button" class="b-salvar tap" data-f="editar">Editar dados e acesso</button></div>`);
+    f.fl.addEventListener('click', e => {
+      const b = e.target.closest('[data-f]'); if (!b) return;
+      if (b.dataset.f === 'fechar') f.fechar();
+      if (b.dataset.f === 'editar') formColab(f, c);
+    });
+  }
+
+  // Novo colaborador (c = null) ou editar
+  function editarColab(c) { formColab(abrirFolha(c ? 'Editar ' + c.nome : 'Novo colaborador', ''), c); }
+  const sugerirUsuario = nome => { const p = semAcento(nome).replace(/[^a-z0-9\s]/g, '').trim().split(/\s+/).filter(Boolean); return p.length ? (p.length > 1 ? p[0] + '.' + p[p.length - 1] : p[0]).slice(0, 40) : ''; };
+  const gerarSenha = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789', b = new Uint32Array(8); crypto.getRandomValues(b); return [...b].map(n => a[n % a.length]).join(''); };
+  function formColab(f, c) {
+    const nova = !c;
+    const d = c ? { ...c } : { nome: '', cargo: 'Corretor', telefone: '', email: '', creci: '', ativo: true, acesso: true, usuario: '' };
+    let usuarioMexido = !!d.usuario;
+    f.trocar(`<h3>${nova ? 'Novo colaborador' : 'Editar ' + esc(d.nome)}</h3>
+      <form id="f-colab" novalidate autocomplete="off">
+        <label for="cb-nome">Nome completo</label><input class="campo" id="cb-nome" value="${esc(d.nome)}" maxlength="80" placeholder="Ana Paula Souza" autocomplete="off">
+        <span class="rot">Cargo</span>
+        <div class="opcoes" id="cb-cargo">${CARGOS.map(k => `<button type="button" data-c="${k}" class="${k === d.cargo ? 'on' : ''}" aria-pressed="${k === d.cargo}">${k}</button>`).join('')}</div>
+        <div class="duas">
+          <div><label for="cb-tel">Telefone / WhatsApp</label><input class="campo" id="cb-tel" value="${esc(d.telefone)}" inputmode="tel" placeholder="(34) 99999-0000" autocomplete="off"></div>
+          <div><label for="cb-creci">CRECI</label><input class="campo" id="cb-creci" value="${esc(d.creci)}" placeholder="opcional" autocomplete="off"></div>
+        </div>
+        <label for="cb-email">E-mail</label><input class="campo" id="cb-email" value="${esc(d.email)}" inputmode="email" autocapitalize="off" placeholder="opcional" autocomplete="off">
+        <p class="secao">Acesso ao hub</p>
+        <label class="chave-linha" for="cb-acesso"><span><b>Pode entrar no hub</b><small>Com usuário e senha próprios. Sem acesso, só aparece no CRM como responsável.</small></span><span class="chave"><input type="checkbox" id="cb-acesso"${d.acesso ? ' checked' : ''}><i></i></span></label>
+        <div id="cb-acesso-campos" style="display:grid;gap:8px"${d.acesso ? '' : ' hidden'}>
+          <label for="cb-usuario">Usuário</label><input class="campo" id="cb-usuario" value="${esc(d.usuario)}" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ana.souza" maxlength="40" autocomplete="off">
+          <label for="cb-senha">${nova || !c.acesso ? 'Senha' : 'Nova senha'}</label>
+          <div class="campo-acao"><input class="campo" id="cb-senha" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="new-password" placeholder="${nova || !c.acesso ? 'mínimo 6 caracteres' : 'deixe em branco para manter'}" maxlength="80"><button type="button" class="b-mini tap" id="cb-gerar">${svg(IC.chave)} Gerar</button></div>
+        </div>
+        ${nova ? '' : `<label class="chave-linha" for="cb-ativo" style="margin-top:6px"><span><b>Ativo</b><small>Inativo não entra no hub e some da lista de corretores do CRM. As vendas dele continuam no histórico.</small></span><span class="chave"><input type="checkbox" id="cb-ativo"${d.ativo ? ' checked' : ''}><i></i></span></label>`}
+        <p class="erro-f" id="cb-erro" role="alert"></p>
+        <div class="fim-folha"><button type="button" class="b-cancelar tap" id="cb-cancelar">Cancelar</button><button class="b-salvar tap" id="cb-ok">${nova ? 'Cadastrar' : 'Salvar'}</button></div>
+        ${nova ? '' : '<button type="button" class="b-excluir" id="cb-excluir">Excluir cadastro</button>'}
+      </form>`);
+    const fl = f.fl, erro = $('#cb-erro', fl);
+    setTimeout(() => $('#cb-nome', fl).focus(), 350);
+    fl.addEventListener('input', () => { erro.textContent = ''; });
+    $('#cb-cancelar', fl).addEventListener('click', f.fechar);
+    $$('#cb-cargo button', fl).forEach(b => b.addEventListener('click', () => { d.cargo = b.dataset.c; $$('#cb-cargo button', fl).forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); }));
+    $('#cb-acesso', fl).addEventListener('change', e => { $('#cb-acesso-campos', fl).hidden = !e.target.checked; });
+    $('#cb-usuario', fl).addEventListener('input', () => { usuarioMexido = true; });
+    $('#cb-nome', fl).addEventListener('input', e => { if (!usuarioMexido) $('#cb-usuario', fl).value = sugerirUsuario(e.target.value); });
+    $('#cb-gerar', fl).addEventListener('click', () => { $('#cb-senha', fl).value = gerarSenha(); erro.textContent = ''; });
+    const exc = $('#cb-excluir', fl);
+    let confirma = false;
+    if (exc) exc.addEventListener('click', async () => {
+      if (!confirma) { confirma = true; exc.textContent = 'Toque de novo para excluir (prefira desativar)'; return; }
+      try { await api('colaborador_excluir', { id: c.id }); f.fechar(); avisar('Cadastro excluído'); carregarColaboradores(); }
+      catch (x) { erro.textContent = x.message; }
+    });
+    $('#f-colab', fl).addEventListener('submit', async e => {
+      e.preventDefault();
+      const corpo = {
+        id: c ? c.id : undefined, nome: $('#cb-nome', fl).value.trim(), cargo: d.cargo, telefone: $('#cb-tel', fl).value.trim(),
+        creci: $('#cb-creci', fl).value.trim(), email: $('#cb-email', fl).value.trim(), acesso: $('#cb-acesso', fl).checked,
+        usuario: $('#cb-usuario', fl).value.trim().toLowerCase(), senha: $('#cb-senha', fl).value, ativo: c ? $('#cb-ativo', fl).checked : true
+      };
+      if (!corpo.nome) { erro.textContent = 'Informe o nome do colaborador.'; $('#cb-nome', fl).focus(); return; }
+      if (corpo.acesso && !corpo.senha && (nova || !c.acesso)) { erro.textContent = 'Crie uma senha para o acesso (ou toque em Gerar).'; $('#cb-senha', fl).focus(); return; }
+      const ok = $('#cb-ok', fl); ok.disabled = true;
+      try {
+        await api('colaborador_salvar', corpo);
+        carregarColaboradores();
+        if (corpo.acesso && corpo.senha) acessoCriado(f, corpo, nova);
+        else { f.fechar(); avisar(nova ? 'Colaborador cadastrado' : 'Alterações salvas'); }
+      } catch (x) {
+        if (x.status === 401) { f.fechar(); return entrada(); }
+        erro.textContent = x.message; ok.disabled = false;
+      }
+    });
+  }
+  // Depois de criar ou trocar a senha: mostra o acesso para enviar ao colaborador
+  function acessoCriado(f, c, nova) {
+    const link = location.origin + '/';
+    const txt = `Olá, ${primeiroNome(c.nome)}! ${nova ? 'Seu acesso ao' : 'Sua nova senha do'} ${NOME_HUB}:\n${link}\nUsuário: ${c.usuario}\nSenha: ${c.senha}\nNo primeiro acesso, troque a senha no botão da sua conta.`;
+    f.trocar(`<h3>${nova ? 'Acesso criado' : 'Senha alterada'}</h3>
+      <p class="ajuda" style="margin-bottom:12px">Envie para ${esc(primeiroNome(c.nome))}. A senha não aparece de novo depois que você fechar esta janela.</p>
+      <div class="credenciais"><span>Endereço: <code>${esc(link)}</code></span><span>Usuário: <b><code>${esc(c.usuario)}</code></b></span><span>Senha: <b><code>${esc(c.senha)}</code></b></span></div>
+      <div class="lista-botoes" style="margin-top:14px">
+        ${c.telefone ? `<a class="item-conta" href="${esc(wa(c.telefone) + '?text=' + encodeURIComponent(txt))}" target="_blank" rel="noopener">${svg(IC.whats)}<span>Enviar pelo WhatsApp<small>${esc(c.telefone)}</small></span></a>` : ''}
+        <button type="button" class="item-conta" id="ac-copiar">${svg(IC.copiar)}<span>Copiar o acesso<small>Para colar onde quiser</small></span></button>
+      </div>
+      <div class="fim-folha"><button type="button" class="b-salvar tap" id="ac-ok">Concluir</button></div>`);
+    $('#ac-copiar', f.fl).addEventListener('click', async () => { try { await navigator.clipboard.writeText(txt); avisar('Acesso copiado'); } catch (e) { avisar('Não consegui copiar. Selecione o texto e copie.'); } });
+    $('#ac-ok', f.fl).addEventListener('click', f.fechar);
+  }
 
   // ---------- tema e conta ----------
   function aplicarTema(escuro) {
@@ -873,12 +1259,47 @@ img { max-width: 100%; }
     aplicarTema(escuro);
     guardar('tema', escuro ? 'dark' : 'light');
   });
-  $('#conta').addEventListener('click', async () => {
-    if (DEMO) { avisar('Exemplo: o que você mexer fica só neste navegador.'); return; }
-    if (!$('#conta').dataset.sair) { $('#conta').dataset.sair = '1'; avisar('Toque de novo para sair'); setTimeout(() => delete $('#conta').dataset.sair, 3000); return; }
-    try { await api('sair'); } catch (e) {}
-    entrada();
-  });
+  const nomeConta = () => EU && !ehAdmin() ? EU.nome : CFG.empresa;
+  const iniciaisConta = () => EU && !ehAdmin() ? iniciaisDe(EU.nome) : INICIAIS;
+  function abrirConta(ir) {
+    if (!EU) return;
+    const f = abrirFolha('Conta', '');
+    const inicio = () => {
+      f.trocar(`<div class="ficha-topo"><span class="avatar">${esc(iniciaisConta())}</span><div><b>${esc(nomeConta())}</b><small>${DEMO ? 'Modo exemplo · ' : ''}${ehAdmin() ? 'Administrador' : esc(EU.cargo || 'Colaborador')} · usuário ${esc(EU.usuario || '')}</small></div></div>
+        <div class="lista-botoes">
+          <button type="button" class="item-conta" data-c="senha">${svg(IC.chave)}<span>Trocar minha senha<small>Pede a senha atual</small></span></button>
+          <button type="button" class="item-conta perigo" data-c="sair">${svg(IC.sair)}<span>Sair<small>Pede usuário e senha de novo neste aparelho</small></span></button>
+        </div>`);
+    };
+    const senha = () => {
+      f.trocar(`<h3>Trocar minha senha</h3>
+        <form id="f-senha" novalidate>
+          <label for="ts-atual">Senha atual</label><input class="campo" id="ts-atual" type="password" autocomplete="current-password">
+          <label for="ts-nova">Senha nova</label><input class="campo" id="ts-nova" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres">
+          <label for="ts-repete">Repita a senha nova</label><input class="campo" id="ts-repete" type="password" autocomplete="new-password">
+          <p class="erro-f" id="ts-erro" role="alert"></p>
+          <div class="fim-folha"><button type="button" class="b-cancelar tap" id="ts-voltar">Voltar</button><button class="b-salvar tap" id="ts-ok">Trocar senha</button></div>
+        </form>`);
+      setTimeout(() => $('#ts-atual', f.fl)?.focus(), 300);
+      $('#ts-voltar', f.fl).addEventListener('click', inicio);
+      $('#f-senha', f.fl).addEventListener('submit', async e => {
+        e.preventDefault();
+        const atual = $('#ts-atual', f.fl).value, nova = $('#ts-nova', f.fl).value, err = $('#ts-erro', f.fl);
+        if (nova.length < 6) { err.textContent = 'A senha nova precisa ter pelo menos 6 caracteres.'; return; }
+        if (nova !== $('#ts-repete', f.fl).value) { err.textContent = 'As duas senhas novas não são iguais.'; return; }
+        const b = $('#ts-ok', f.fl); b.disabled = true;
+        try { await api('senha_trocar', { atual, nova }); f.fechar(); avisar('Senha trocada. Os outros aparelhos vão pedir a senha nova.'); }
+        catch (x) { if (x.status === 401) { f.fechar(); return entrada(); } err.textContent = x.message; b.disabled = false; }
+      });
+    };
+    f.fl.addEventListener('click', async e => {
+      const b = e.target.closest('[data-c]'); if (!b) return;
+      if (b.dataset.c === 'senha') senha();
+      if (b.dataset.c === 'sair') { f.fechar(); try { await api('sair'); } catch (x) {} EU = null; entrada(); }
+    });
+    if (ir === 'senha') senha(); else inicio();
+  }
+  $('#conta').addEventListener('click', () => abrirConta());
 
   // ---------- números ao vivo: atualiza sozinho a cada minuto e quando você volta para a aba ----------
   let atualizando = false;
@@ -888,6 +1309,7 @@ img { max-width: 100%; }
     try {
       const d = await api('dados');
       if (d && d.numeros && JSON.stringify(d.numeros) !== JSON.stringify(numeros)) { numeros = d.numeros; desenhar(true); }
+      if (vistaAtual() === 'colaboradores') carregarColaboradores();
     } catch (e) { if (e.status === 401) entrada(); }
     atualizando = false;
   }
@@ -895,12 +1317,21 @@ img { max-width: 100%; }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarNumeros(); });
 
   // ---------- carregar e entrar ----------
+  function pintarConta() {
+    $('#conta').textContent = iniciaisConta();
+    $('#conta').setAttribute('aria-label', 'Conta de ' + nomeConta());
+    const h = new Date().getHours();
+    $('#saudacao').textContent = (h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite') + (EU && !ehAdmin() ? ', ' + primeiroNome(EU.nome) : CFG.saudacao ? ', ' + CFG.saudacao : '');
+  }
   async function carregar() {
     try {
       const d = await api('dados');
+      EU = d.usuario || EU;
       numeros = (d && d.numeros) || {};
       $('#exemplo').hidden = !DEMO;
+      pintarConta();
       desenhar(true);
+      mostrarVista();
     } catch (e) {
       if (e.status === 401) return entrada();
       avisar(e.message);
@@ -908,38 +1339,41 @@ img { max-width: 100%; }
   }
   function entrada() {
     const t = $('#entrada'); t.hidden = false;
-    if (DEMO) $('#e-sub').textContent = 'Exemplo: digite qualquer senha para entrar.';
-    setTimeout(() => $('#e-senha').focus(), 300);
+    if (DEMO) $('#e-sub').textContent = 'Exemplo: digite qualquer usuário e senha para entrar.';
+    setTimeout(() => $('#e-usuario').focus(), 300);
     $('#f-entrar').onsubmit = async ev => {
       ev.preventDefault();
+      const usuario = $('#e-usuario').value.trim(), senha = $('#e-senha').value;
+      if (!usuario || !senha) { $('#e-erro').textContent = 'Preencha o usuário e a senha.'; return; }
       const btn = $('#e-ok'); btn.disabled = true; btn.textContent = 'Entrando…'; $('#e-erro').textContent = '';
-      try { await api('entrar', { senha: $('#e-senha').value }); t.hidden = true; $('#e-senha').value = ''; carregar(); }
-      catch (x) { $('#e-erro').textContent = x.message; $('#e-senha').select(); }
+      try {
+        const r = await api('entrar', { usuario, senha });
+        EU = r.usuario || null;
+        t.hidden = true; $('#e-senha').value = '';
+        await carregar();
+      } catch (x) { $('#e-erro').textContent = x.message; $('#e-senha').select(); }
       btn.disabled = false; btn.textContent = 'Entrar';
     };
   }
 
   // ---------- primeira pintura ----------
-  const h = new Date().getHours();
-  $('#saudacao').textContent = (h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite') + (CFG.saudacao ? ', ' + CFG.saudacao : '');
-  $('#conta').textContent = INICIAIS;
   $('#e-titulo').textContent = NOME_HUB;
   $('#rodape').innerHTML = CFG.site ? `<a href="${esc(CFG.site)}" target="_blank" rel="noopener">${esc(CFG.empresa)}</a>` : esc(CFG.empresa);
   if (CFG.logo) $$('[data-logo]').forEach(s => { const i = document.createElement('img'); i.src = CFG.logo; i.alt = ''; i.setAttribute('class', s.getAttribute('class') || ''); s.replaceWith(i); });
-  document.title = NOME_HUB + ' · ' + CFG.empresa;
   const dt = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   $('#data').textContent = dt.charAt(0).toUpperCase() + dt.slice(1);
   aplicarTema(document.documentElement.dataset.theme === 'dark');
   $('#buscar').innerHTML = svg(IC.busca);
   $('#buscar2').insertAdjacentHTML('afterbegin', svg(IC.busca, 2.2));
   if (/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '')) $('#buscar2 kbd').textContent = '⌘ K';
+  pintarConta();
   pintarAgenda();
   mostrarVista();
   desenhar();
   (async () => {
     try {
       const s = await api('sessao');
-      if (s.logado) carregar(); else entrada();
+      if (s.logado) { EU = s.usuario || null; carregar(); } else entrada();
     } catch (e) { avisar(e.message); }
   })();
 })();
