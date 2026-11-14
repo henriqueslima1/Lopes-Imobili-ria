@@ -1,12 +1,14 @@
-// Dashboard: o período em 4 números (com a comparação), o funil com as metas, o que está esperando você,
-// os leads por dia, de onde vêm (origem e campanha, com quanto vira visita e venda) e o que procuram.
-// Cores dos gráficos: funil = rampa do roxo (ordem das etapas, --f1..--f6); demais barras = uma cor só (--serie).
+// Dashboard: três perguntas, nesta ordem.
+//  1. Quanto entrou e o que fazer agora  → leads novos (cartão escuro, com as barras por dia) + "Para agir agora"
+//  2. O período foi melhor ou pior       → vendas (o cartão vivo), taxa de visita e o que está em negociação
+//  3. Onde trava e o que converte        → funil em pilares (o gargalo em limão) + leads por origem, campanha, empreendimento…
+// Cores dos gráficos: uma série só (--serie); o destaque (pico e hoje) é o limão listrado do cartão escuro.
 const CAM = ['novo', 'primeiro_contato', 'respondeu', 'visita_agendada', 'proposta', 'venda'];
 // Quem está numa etapa de saída conta até onde certamente chegou antes de sair
 const SAIDA = { nao_respondeu: 'primeiro_contato', perdido: 'primeiro_contato', sem_intencao: 'respondeu' };
 const alcance = l => Math.max(0, CAM.indexOf(SAIDA[l.etapa] || l.etapa));
 const VISITA = CAM.indexOf('visita_agendada');
-let abaProcura = 'emp';
+let abaQuebra = 'origem';
 
 function funil(lista) {
   const chegou = Object.fromEntries(CAM.map(k => [k, 0])), saiu = Object.fromEntries(Object.keys(SAIDA).map(k => [k, 0]));
@@ -21,10 +23,10 @@ const moedaCurta = v => v >= 1e6 ? 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { m
   : v >= 1e3 ? 'R$ ' + Math.round(v / 1e3).toLocaleString('pt-BR') + ' mil' : dinheiro(v);
 const DIAS_SEM = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 // Variação: seta + número; verde quando sobe, vermelho quando desce (sempre com a seta, nunca só a cor)
-function delta(v, sufixo, rotulo) {
-  if (v === null) return '<small class="delta-rot">primeiro período com dados</small>';
-  const tipo = v > 0 ? 'sobe' : v < 0 ? 'desce' : 'igual';
-  return `<span class="delta ${tipo}">${tipo === 'sobe' ? '▲' : tipo === 'desce' ? '▼' : '='} ${Math.abs(v)}${sufixo}</span><small class="delta-rot">${esc(rotulo)}</small>`;
+function delta(v, sufixo, rotulo, junto = false) {
+  if (v === null) return junto ? '<span class="delta igual">primeiro período com dados</span>' : '<small class="delta-rot">primeiro período com dados</small>';
+  const tipo = v > 0 ? 'sobe' : v < 0 ? 'desce' : 'igual', txt = `${tipo === 'sobe' ? '↑' : tipo === 'desce' ? '↓' : '='} ${Math.abs(v)}${sufixo}`;
+  return junto ? `<span class="delta ${tipo}"><b>${txt}</b> ${esc(rotulo)}</span>` : `<span class="delta ${tipo}">${txt}</span><small class="delta-rot">${esc(rotulo)}</small>`;
 }
 // Escala do eixo: 0 até um número redondo, com 2 a 4 marcas inteiras
 function escala(max) {
@@ -32,7 +34,7 @@ function escala(max) {
   const topo = Math.max(passo * Math.ceil(max / passo), passo * 2);
   return { topo, marcas: Array.from({ length: topo / passo + 1 }, (_, i) => i * passo) };
 }
-// Agrupa leads por um campo, com quantos chegaram à visita e à venda
+// Agrupa leads por um campo, com quantos chegaram à visita e à venda; acima de 6 grupos, os menores viram "Outros"
 function agrupar(lista, chave) {
   const g = new Map();
   for (const l of lista) {
@@ -40,14 +42,17 @@ function agrupar(lista, chave) {
     x.n++; if (alcance(l) >= VISITA) x.visita++; if (l.etapa === 'venda') x.venda++;
     g.set(k, x);
   }
-  return [...g.values()].sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome, 'pt-BR'));
+  const grupos = [...g.values()].sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome, 'pt-BR'));
+  if (grupos.length <= 6) return grupos;
+  const resto = grupos.slice(5), soma = c => resto.reduce((s, x) => s + x[c], 0);
+  return [...grupos.slice(0, 5), { nome: `Outros ${resto.length}`, outros: true, n: soma('n'), visita: soma('visita'), venda: soma('venda') }];
 }
-// Linhas "nome · barra · visita · vendas" (cada linha abre a lista de leads já filtrada)
+// Linhas "nome · barra · visita · vendas" (com link, a linha abre a lista já filtrada)
 function linhasConversao(grupos, link) {
   const max = Math.max(1, ...grupos.map(x => x.n));
   return `<div class="tb">
     <div class="tb-cab"><span></span><span>Leads</span><span>Visita</span><span>Vendas</span></div>
-    ${grupos.map(x => { const href = link(x); return `<${href ? `a href="${esc(href)}"` : 'div'} class="tb-linha" data-dica="${esc(plural(x.n, 'lead', 'leads'))}|${esc(x.nome)}: ${x.visita} na visita (${pct(x.visita, x.n)}%), ${plural(x.venda, 'venda', 'vendas')}">
+    ${grupos.map(x => { const href = x.outros ? null : link(x); return `<${href ? `a href="${esc(href)}"` : 'div'} class="tb-linha" data-dica="${esc(plural(x.n, 'lead', 'leads'))}|${esc(x.nome)}: ${x.visita} na visita (${pct(x.visita, x.n)}%), ${plural(x.venda, 'venda', 'vendas')}">
       <span class="tb-nome">${esc(x.nome)}</span>
       <span class="tb-barra"><i style="width:${Math.max(4, x.n * 100 / max)}%"></i><b>${x.n}</b></span>
       <span class="tb-num">${pct(x.visita, x.n)}%</span>
@@ -84,19 +89,16 @@ registrarTela('dashboard', { titulo: 'Dashboard', desenhar(main) {
   const parados = CRM.leads.filter(l => doEmp(l) && ['novo', 'primeiro_contato', 'respondeu', 'visita_agendada', 'proposta'].includes(l.etapa) && l.atualizado_em < tres).length;
   const fu = fuContagem();
   const novoVelho = antigo('novo') && antigo('novo') < Date.now() - 86400000;
-  // [número, título, status, explicação, link, botão, ícone]
+  // [número, título, urgente?, explicação, link, ícone, nome curto (para a linha "Em dia")]
   const acoes = [
-    [n('respondeu'), 'Responderam e esperam você', n('respondeu') ? 'urgente' : 'emdia',
-      n('respondeu') ? 'o mais antigo espera há ' + tempoDesde(antigo('respondeu')) : 'ninguém esperando resposta', 'quadro.html#col-respondeu', 'Responder', 'whats'],
-    [n('visita_agendada'), 'Visitas para confirmar', n('visita_agendada') ? 'atencao' : 'emdia',
-      n('visita_agendada') ? 'confirme dia e horário com cada lead' : 'nenhuma visita marcada', 'quadro.html#col-visita_agendada', 'Ver visitas', 'calendario'],
-    [n('novo'), 'Sem primeiro contato', n('novo') ? (novoVelho ? 'urgente' : 'atencao') : 'emdia',
-      n('novo') ? 'o mais antigo chegou há ' + tempoDesde(antigo('novo')) : 'todos já foram chamados', 'quadro.html#col-novo', 'Chamar', 'pessoas'],
-    [fu.atrasados + fu.hoje, 'Follow-ups para hoje', fu.atrasados ? 'atencao' : 'emdia',
-      fu.atrasados ? plural(fu.atrasados, 'atrasado', 'atrasados') + (fu.hoje ? ' e ' + fu.hoje + ' para hoje' : '') : fu.hoje ? 'nenhum atrasado' : 'nada marcado para hoje', 'followups.html', 'Ver follow-ups', 'tarefa'],
-    [parados, 'Parados', parados ? 'atencao' : 'emdia',
-      parados ? 'sem atividade há mais de 3 dias' : 'nenhum sem atividade há 3 dias', 'quadro.html', 'Ver no CRM', 'relogio']
+    [n('respondeu'), 'Responderam e esperam você', true, 'o mais antigo espera há ' + tempoDesde(antigo('respondeu')), 'quadro.html#col-respondeu', 'whats', 'respostas'],
+    [n('novo'), 'Sem primeiro contato', !!novoVelho, 'o mais antigo chegou há ' + tempoDesde(antigo('novo')), 'quadro.html#col-novo', 'pessoas', 'primeiro contato'],
+    [n('visita_agendada'), 'Visitas para confirmar', false, 'confirme dia e horário com cada lead', 'quadro.html#col-visita_agendada', 'calendario', 'visitas'],
+    [fu.atrasados + fu.hoje, 'Follow-ups para hoje', false, fu.atrasados ? plural(fu.atrasados, 'atrasado', 'atrasados') + (fu.hoje ? ' e ' + fu.hoje + ' para hoje' : '') : 'nenhum atrasado', 'followups.html', 'tarefa', 'follow-ups'],
+    [parados, 'Parados', false, 'sem atividade há mais de 3 dias', 'quadro.html', 'relogio', 'leads parados']
   ];
+  // só aparece o que tem pendência (o urgente primeiro); o que está zerado vira uma linha só
+  const pendentes = acoes.filter(a => a[0]).sort((a, b) => b[2] - a[2]), emDia = acoes.filter(a => !a[0]).map(a => a[6]);
 
   // ---------- leads por dia (por semana em 90 dias) ----------
   const semanal = dias > 31, baldes = [];
@@ -107,13 +109,12 @@ registrarTela('dashboard', { titulo: 'Dashboard', desenhar(main) {
     const i = baldes.length - 1 - (semanal ? Math.floor(atras / 7) : atras);
     if (baldes[i]) baldes[i].n++;
   }
-  const maxB = Math.max(0, ...baldes.map(b => b.n)), esc0 = escala(Math.max(maxB, 1));
+  const maxB = Math.max(0, ...baldes.map(b => b.n));
   const iPico = maxB ? baldes.findIndex(b => b.n === maxB) : -1;
   const media = total / baldes.length;
   const passoRot = baldes.length <= 8 ? 1 : Math.ceil(baldes.length / 6);
-  const mediaTxt = media.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + (semanal ? ' por semana' : ' por dia');
-  // minigráfico do cartão: as mesmas contagens, o período atual em destaque
-  const spark = baldes.map((b, i) => `<i class="${i === baldes.length - 1 ? 'agora' : ''}" style="height:${maxB ? Math.max(6, b.n * 100 / maxB) : 6}%"></i>`).join('');
+  const mediaNum = media.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  const altura = v => v * 86 / Math.max(maxB, 6); // a escala vai até pelo menos 6: 1 lead é uma barra baixa, 2 um pouco maior; // a barra mais alta ocupa 86% da área: sobra lugar para o número do pico
 
   // ---------- gargalo: a passagem com a menor taxa (abaixo de 50%) entre etapas com pelo menos 3 leads ----------
   let gargalo = null;
@@ -124,114 +125,59 @@ registrarTela('dashboard', { titulo: 'Dashboard', desenhar(main) {
     if (taxa < 0.5 && (!gargalo || taxa < gargalo.taxa)) gargalo = { i, taxa, de, parou: de - ch[CAM[i]] };
   }
   const totalSaiu = Object.values(fa.saiu).reduce((s, v) => s + v, 0);
+  const escF = escala(Math.max(total, 1)); // eixo do funil: de 0 até um número redondo
   const linkEtapa = k => k === 'venda' ? 'quadro.html?aba=ganhos#col-venda' : 'quadro.html#col-' + k;
 
-  // ---------- de onde vêm ----------
-  const origens = agrupar(atual, l => l.origem || 'Sem origem');
-  const comCampanha = atual.filter(l => l.campanha);
-  let campanhas = agrupar(comCampanha, l => l.campanha);
-  if (campanhas.length > 6) {
-    const resto = campanhas.slice(5);
-    campanhas = [...campanhas.slice(0, 5), { nome: `Outras ${resto.length} campanhas`, outras: true, n: resto.reduce((s, x) => s + x.n, 0), visita: resto.reduce((s, x) => s + x.visita, 0), venda: resto.reduce((s, x) => s + x.venda, 0) }];
-  }
+  // ---------- o que converte: os leads do período por um campo, com a taxa de visita e as vendas ----------
   const qs = o => 'leads.html?' + new URLSearchParams({ todos: '1', dias: String(dias), ...o });
-
-  // ---------- o que procuram ----------
-  const contarPor = campo => { const c = {}; for (const l of atual) if (l[campo]) c[l[campo]] = (c[l[campo]] || 0) + 1; return Object.entries(c).sort((a, b) => b[1] - a[1]); };
-  const PROCURA = { emp: ['Empreendimento', emp ? [] : contarPor('empreendimento')], tipologia: ['Tipologia', contarPor('tipologia')], objetivo: ['Objetivo', contarPor('objetivo')] };
-  const abasProcura = Object.entries(PROCURA).filter(([, [, l]]) => l.length);
-  if (!abasProcura.some(([k]) => k === abaProcura) && abasProcura.length) abaProcura = abasProcura[0][0];
-  const listaProcura = k => { const l = PROCURA[k]?.[1] || [], max = Math.max(1, ...l.map(([, v]) => v));
-    return `<div class="hbarras">${l.map(([nome, v]) => `<div class="hb" data-dica="${esc(plural(v, 'lead', 'leads'))}|${esc(nome)} · ${pct(v, total)}% do período"><span>${k === 'emp' ? `<a href="${esc(url({ emp: nome }))}">${esc(nome)}</a>` : esc(nome)}</span><i><s style="width:${Math.round(v * 100 / max)}%"></s></i><b>${v}</b></div>`).join('')}</div>`; };
+  const com = campo => atual.filter(l => l[campo]);
+  // chave: [nome da aba, leads que entram, de onde sai o grupo, link de cada linha (null = sem link)]
+  const QUEBRAS = {
+    origem: ['Origem', atual, l => l.origem || 'Sem origem', x => x.nome === 'Sem origem' ? 'leads.html?aba=sem_origem&todos=1&dias=' + dias : qs({ origem: x.nome })],
+    campanha: ['Campanha', com('campanha'), l => l.campanha, x => qs({ campanha: x.nome })],
+    emp: ['Empreendimento', emp ? [] : com('empreendimento'), l => l.empreendimento, x => url({ emp: x.nome })],
+    tipologia: ['Tipologia', com('tipologia'), l => l.tipologia, () => null],
+    objetivo: ['Objetivo', com('objetivo'), l => l.objetivo, () => null]
+  };
+  // Origem e Campanha aparecem sempre (vazia, a Campanha explica como preencher); as outras, só com dado
+  const abas = Object.keys(QUEBRAS).filter(k => k === 'origem' || k === 'campanha' || QUEBRAS[k][1].length);
+  if (!abas.includes(abaQuebra)) abaQuebra = 'origem';
+  const listaQuebra = k => {
+    const [, lista, chave, link] = QUEBRAS[k];
+    if (lista.length) return linhasConversao(agrupar(lista, chave), link);
+    return k === 'campanha' ? '<p class="vazio-dica">Nenhum lead do período chegou com o nome da campanha. Quando o formulário ou o anúncio gravar a campanha no lead, cada uma aparece aqui com a taxa de visita e as vendas.</p>'
+      : '<p class="vazio">Nenhum lead no período.</p>';
+  };
 
   const hora = new Date().getHours();
   const saudacao = (hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite') + (MARCA_CRM.saudacao ? ', ' + MARCA_CRM.saudacao : '');
   const rotAntes = `vs. ${dias} dias antes`;
+  const resumo = n('respondeu') ? `<b>${plural(n('respondeu'), 'lead espera', 'leads esperam')}</b> sua resposta, o mais antigo há ${tempoDesde(antigo('respondeu'))}.`
+    : pendentes.length ? 'Ninguém esperando resposta. Veja o que mais pede atenção hoje.' : 'Tudo em dia: ninguém esperando você agora.';
 
   main.innerHTML = `
 <header class="pg-topo">
   <div>
-    <p class="eyebrow">Dashboard · últimos ${dias} dias${emp ? ' · ' + esc(emp) : ''}</p>
     <h1>${esc(saudacao)}</h1>
-    <p class="sub">${total ? `${total === 1 ? 'Chegou' : 'Chegaram'} <b>${plural(total, 'lead', 'leads')}</b> no período${crescimento !== null ? ` — ${crescimento >= 0 ? crescimento + '% a mais' : Math.abs(crescimento) + '% a menos'} que nos ${dias} dias anteriores` : ''}.` : `Nenhum lead novo nos últimos ${dias} dias.`}
-      ${n('respondeu') ? ` <b>${plural(n('respondeu'), 'lead espera', 'leads esperam')}</b> sua resposta.` : ' Ninguém esperando resposta agora.'}</p>
+    <p class="sub">${resumo}</p>
   </div>
+  <div class="filtros-linha">${seletorPeriodo(PERIODOS, dias, url)}${formFiltros(emp, dias)}</div>
 </header>
-<div class="filtros-linha">${seletorPeriodo(PERIODOS, dias, url)}${formFiltros(emp, dias)}</div>
 
-<section class="kpis">
-  <div class="card kpi destaque">
-    <small>Leads novos</small>
-    <div class="kpi-linha"><b data-conta>${total}</b>${delta(crescimento, '%', rotAntes)}</div>
-    <div class="spark" aria-hidden="true">${spark}</div>
-  </div>
-  <div class="card kpi">
-    <small>Chegaram à visita</small>
-    <div class="kpi-linha"><b data-conta>${taxaVisita}%</b>${delta(taxaVisitaAntes === null ? null : taxaVisita - taxaVisitaAntes, ' p.p.', rotAntes)}</div>
-    <div class="medidor" data-dica="${taxaVisita}%|${ch.visita_agendada} de ${total} leads chegaram à visita${METAS.visita_agendada != null ? ' · meta ' + METAS.visita_agendada + '%' : ''}">
-      <i style="width:${Math.min(taxaVisita, 100)}%"></i>${METAS.visita_agendada != null ? `<s style="left:${Math.min(METAS.visita_agendada, 100)}%"></s>` : ''}
-    </div>
-    <p>${METAS.visita_agendada != null ? (taxaVisita >= METAS.visita_agendada ? `<span class="ok-txt">✓ meta de ${METAS.visita_agendada}% batida</span>` : `meta ${METAS.visita_agendada}% · faltam ${Math.max(0, Math.ceil(METAS.visita_agendada * total / 100) - ch.visita_agendada)} visitas`) : `${ch.visita_agendada} de ${total} leads`}</p>
-  </div>
-  <div class="card kpi">
-    <small>Vendas</small>
-    <div class="kpi-linha"><b data-conta>${ch.venda}</b>${delta(antes.length ? ch.venda - fb.chegou.venda : null, '', rotAntes)}</div>
-    <p>${pct(ch.venda, total)}% dos leads novos${vendido ? ' · <b>' + moedaCurta(vendido) + '</b>' : ''}</p>
-  </div>
-  <div class="card kpi">
-    <small>Em negociação agora</small>
-    <div class="kpi-linha"><b${valorNegociando ? ' class="longo"' : ' data-conta'}>${valorNegociando ? moedaCurta(valorNegociando) : negociando}</b></div>
-    <p>${valorNegociando ? plural(negociando, 'lead', 'leads') + ' · ' : ''}${plural(n('visita_agendada'), 'visita', 'visitas')} · ${plural(n('proposta'), 'proposta', 'propostas')}</p>
-  </div>
-</section>
 
-<div class="grade-2">
-  <section class="card">
-    <div class="card-topo"><div><h2>Funil do período</h2><p>Até onde chegaram os ${plural(total, 'lead que entrou', 'leads que entraram')}</p></div>${Object.keys(METAS).length ? '<small class="legenda"><i class="chave-meta"></i>meta</small>' : ''}</div>
-    <div class="funil2">${CAM.map((k, i) => {
-      const v = ch[k], meta = METAS[k], travou = gargalo && gargalo.i === i, passo = i ? pct(v, ch[CAM[i - 1]]) : null;
-      return `${i ? `<div class="f2-passo${travou ? ' trava' : ''}">${travou ? ico('alerta') + `<span>${passo}% seguiram · gargalo</span>` : `<span>↓ ${passo}% seguiram</span>`}</div>` : ''}
-      <a class="f2-linha" href="${linkEtapa(k)}" data-dica="${esc(plural(v, 'lead', 'leads'))}|${esc(nomeEtapa(k))} · ${pct(v, total)}% dos que entraram${meta != null ? ' · meta ' + meta + '%' : ''}">
-        <span class="f2-nome">${esc(nomeEtapa(k))}</span>
-        <span class="f2-pista"><i style="width:${v ? Math.max(1.5, v * 100 / Math.max(1, total)) : 0}%;background:var(--f${i + 1})"></i>${meta != null ? `<s style="left:${Math.min(meta, 100)}%"></s>` : ''}</span>
-        <b class="f2-num">${v}</b>
-        <span class="f2-pct"><span class="f2-p">${i ? pct(v, total) + '%' : ''}</span>${meta != null && total ? `<em class="meta ${pct(v, total) >= meta ? 'ok' : 'baixo'}" title="meta ${meta}%">${pct(v, total) >= meta ? '✓ ' : ''}<span>meta </span>${meta}%</em>` : ''}</span>
-      </a>`; }).join('')}
+<div class="grade-2 funil-linha">
+  <section class="heroi">
+    <div class="heroi-topo">
+      ${bolhaIco('pessoas')}
+      <div><h2>Leads novos${emp ? ' · ' + esc(emp) : ''}</h2>${delta(crescimento, '%', rotAntes, true)}</div>
+      <button type="button" class="mini" id="ver-numeros" aria-pressed="false">Ver números</button>
     </div>
-    ${totalSaiu ? `<div class="saidas"><span>Saíram sem fechar <b>${totalSaiu}</b></span>${Object.entries(fa.saiu).filter(([, v]) => v).map(([k, v]) => `<span class="pilula-s">${esc(nomeEtapa(k))} · ${v}</span>`).join('')}</div>` : ''}
-    ${gargalo ? `<div class="aviso">${ico('alerta')}<p>O funil trava em <b>${esc(nomeEtapa(CAM[gargalo.i - 1]))}</b>: ${gargalo.parou} dos ${gargalo.de} leads que chegaram lá não seguiram para ${esc(nomeEtapa(CAM[gargalo.i]))}.</p>
-      <a href="${linkEtapa(CAM[gargalo.i - 1])}">Ver esses leads →</a></div>` : ''}
-  </section>
-
-  <section class="card">
-    <div class="card-topo"><h2>Para agir agora</h2><small class="ao-vivo">agora</small></div>
-    <ul class="acoes-r">${acoes.map(([num, titulo, tipo, sub, link, botao, icone]) => `
-      <li class="${tipo}">
-        <span class="bolha-ico">${ico(icone)}</span>
-        <div><p>${esc(titulo)} ${tag(tipo)}</p><small>${esc(sub)}</small></div>
-        <b class="num" data-conta>${num}</b>
-        ${num ? `<a class="${tipo === 'urgente' ? 'btn' : 'btn-borda'}" href="${esc(link)}">${botao} →</a>` : ''}
-      </li>`).join('')}
-    </ul>
-    <div class="agenda-sofia">
-      <h3>${ico('calendario')}Agenda · hoje e amanhã</h3>
-      <div id="agenda-crm"><p class="agenda-dica">Carregando a agenda…</p></div>
-    </div>
-  </section>
-</div>
-
-<div class="grade-2 larga">
-  <section class="card">
-    <div class="card-topo">
-      <div><h2>Leads novos por ${semanal ? 'semana' : 'dia'}</h2><p>${total ? `média de ${mediaTxt} · pico de ${maxB} em ${baldes[iPico].dica.replace(' (hoje)', '')}` : 'nenhum lead no período'}</p></div>
-      <div class="topo-graf">${total ? '<small class="legenda"><i class="chave-media"></i>média</small>' : ''}<button type="button" class="mini" id="ver-numeros" aria-pressed="false">Ver números</button></div>
-    </div>
+    <div class="heroi-num"><span data-conta>${total}</span><small>${total === 1 ? 'lead' : 'leads'} em ${dias} dias</small></div>
+    <p class="heroi-sub">${total ? `<i class="chave-media"></i>média de ${mediaNum} por ${semanal ? 'semana' : 'dia'} · pico de ${maxB} ${semanal ? 'na ' : 'em '}${esc(baldes[iPico].dica.replace(' (hoje)', ''))}` : 'nenhum lead no período'}</p>
     <div class="colunas" id="graf-dias">
-      <div class="col-eixo" aria-hidden="true">${esc0.marcas.map(t => `<span style="bottom:${t * 100 / esc0.topo}%">${t}</span>`).join('')}</div>
       <div class="col-area">
-        ${esc0.marcas.map(t => `<i class="col-grade" style="bottom:${t * 100 / esc0.topo}%"></i>`).join('')}
-        ${total ? `<i class="col-media" style="bottom:${media * 100 / esc0.topo}%"></i>` : ''}
-        <div class="col-barras" style="--n:${baldes.length}">${baldes.map((b, i) => `<span class="col${i === baldes.length - 1 ? ' agora' : ''}" tabindex="0" data-dica="${esc(plural(b.n, 'lead', 'leads'))}|${esc(b.dica)}">${i === iPico ? `<em style="bottom:${b.n * 100 / esc0.topo}%">${b.n}</em>` : ''}<i style="height:${b.n * 100 / esc0.topo}%"></i></span>`).join('')}</div>
+        ${total ? `<i class="col-media" style="bottom:${altura(media)}%"></i>` : ''}
+        <div class="col-barras">${baldes.map((b, i) => `<span class="col${i === iPico ? ' pico' : ''}${i === baldes.length - 1 && b.n ? ' agora' : ''}" tabindex="0" data-dica="${esc(plural(b.n, 'lead', 'leads'))}|${esc(b.dica)}">${i === iPico ? `<em style="bottom:${altura(b.n)}%">${b.n}</em>` : ''}<i style="height:${altura(b.n)}%"></i></span>`).join('')}</div>
       </div>
       <div class="col-rotulos" aria-hidden="true">${baldes.map((b, i) => `<span>${(baldes.length - 1 - i) % passoRot === 0 ? esc(b.rot) : ''}</span>`).join('')}</div>
     </div>
@@ -239,22 +185,63 @@ registrarTela('dashboard', { titulo: 'Dashboard', desenhar(main) {
   </section>
 
   <section class="card">
-    <div class="card-topo"><div><h2>De onde vêm</h2><p>Origem dos leads do período e quanto vira visita e venda</p></div></div>
-    ${origens.length ? linhasConversao(origens, x => x.nome === 'Sem origem' ? 'leads.html?aba=sem_origem&todos=1&dias=' + dias : qs({ origem: x.nome })) : '<p class="vazio">Nenhum lead no período.</p>'}
+    <div class="card-topo"><h2>Para agir agora</h2><small class="ao-vivo">agora</small></div>
+    ${pendentes.length ? `<ul class="acoes-r">${pendentes.map(([num, titulo, urgente, sub, link, icone]) => `
+      <li class="${urgente ? 'urgente' : ''}"><a href="${esc(link)}">
+        ${bolhaIco(icone)}
+        <div><p>${esc(titulo)}</p><small>${esc(sub)}</small></div>
+        <b class="num" data-conta>${num}</b>${ico('seta')}
+      </a></li>`).join('')}
+    </ul>` : ''}
+    ${emDia.length ? `<p class="em-dia">${ico('ok')}<span>${pendentes.length ? 'Em dia: ' + esc(emDia.join(', ')) + '.' : 'Tudo em dia: nada esperando você.'}</span></p>` : ''}
+    <div class="agenda-sofia">
+      <h3>${ico('calendario')}Agenda · hoje e amanhã</h3>
+      <div id="agenda-crm"><p class="agenda-dica">Carregando a agenda…</p></div>
+    </div>
   </section>
 </div>
 
-<div class="grade-2">
-  <section class="card">
-    <div class="card-topo"><div><h2>Campanhas</h2><p>Quais anúncios trazem lead que vira visita e venda</p></div></div>
-    ${campanhas.length ? linhasConversao(campanhas, x => x.outras ? null : qs({ campanha: x.nome }))
-      : '<p class="vazio-dica">Nenhum lead do período chegou com o nome da campanha. Quando o formulário ou o anúncio gravar a campanha no lead, cada uma aparece aqui com a taxa de visita e as vendas.</p>'}
+<section class="kpis">
+  <div class="card kpi vivo">
+    <small>Vendas</small><a class="ir" href="${esc(linkEtapa('venda'))}" aria-label="Ver as vendas">${ico('diagonal')}</a>
+    <div class="kpi-linha"><b data-conta>${ch.venda}</b>${delta(antes.length ? ch.venda - fb.chegou.venda : null, '', rotAntes)}</div>
+    <p>${pct(ch.venda, total)}% dos leads novos${vendido ? ' · <b>' + moedaCurta(vendido) + '</b>' : ''}</p>
+  </div>
+  <div class="card kpi">
+    <small>Chegaram à visita</small><a class="ir" href="${esc(linkEtapa('visita_agendada'))}" aria-label="Ver as visitas">${ico('diagonal')}</a>
+    <div class="kpi-linha"><b data-conta>${taxaVisita}%</b>${delta(taxaVisitaAntes === null ? null : taxaVisita - taxaVisitaAntes, ' p.p.', rotAntes)}</div>
+    <div class="medidor" data-dica="${taxaVisita}%|${ch.visita_agendada} de ${total} leads chegaram à visita${METAS.visita_agendada != null ? ' · meta ' + METAS.visita_agendada + '%' : ''}">
+      <i style="width:${Math.min(taxaVisita, 100)}%"></i>${METAS.visita_agendada != null ? `<s style="left:${Math.min(METAS.visita_agendada, 100)}%"></s>` : ''}
+    </div>
+    <p>${METAS.visita_agendada != null ? (taxaVisita >= METAS.visita_agendada ? `<span class="ok-txt">✓ meta de ${METAS.visita_agendada}% batida</span>` : `meta ${METAS.visita_agendada}% · faltam ${Math.max(0, Math.ceil(METAS.visita_agendada * total / 100) - ch.visita_agendada)} visitas`) : `${ch.visita_agendada} de ${total} leads`}</p>
+  </div>
+  <div class="card kpi">
+    <small>Em negociação agora</small><a class="ir" href="${esc('quadro.html')}" aria-label="Ver o quadro">${ico('diagonal')}</a>
+    <div class="kpi-linha"><b${valorNegociando ? '' : ' data-conta'}>${valorNegociando ? moedaCurta(valorNegociando) : negociando}</b></div>
+    <p>${valorNegociando ? plural(negociando, 'lead', 'leads') + ' · ' : ''}${plural(n('visita_agendada'), 'visita', 'visitas')} · ${plural(n('proposta'), 'proposta', 'propostas')}</p>
+  </div>
+</section>
+
+<div class="grade-2 funil-linha">
+  <section class="card funil">
+    <div class="card-topo"><div><h2>Funil do período</h2><p>Até onde chegaram os ${plural(total, 'lead que entrou', 'leads que entraram')}</p></div>
+      ${gargalo ? `<a class="gargalo-aviso" href="${linkEtapa(CAM[gargalo.i - 1])}" title="Ver os leads parados em ${esc(nomeEtapa(CAM[gargalo.i - 1]))}">${ico('alerta')}Gargalo: ${esc(nomeEtapa(CAM[gargalo.i - 1]))} → ${esc(nomeEtapa(CAM[gargalo.i]))} · só ${pct(ch[CAM[gargalo.i]], gargalo.de)}% seguem</a>` : ''}</div>
+    <div class="pilares">
+      <div class="eixo" aria-hidden="true">${escF.marcas.map(t => `<span style="bottom:${t * 88 / escF.topo}%">${t}</span>`).join('')}</div>
+      <div class="plot" aria-hidden="true">${escF.marcas.map(t => `<i class="grade" style="bottom:${t * 88 / escF.topo}%"></i>`).join('')}</div>
+      ${CAM.map((k, i) => {
+        const v = ch[k], meta = METAS[k], trava = gargalo && gargalo.i - 1 === i, alt = v * 88 / escF.topo, segue = i < CAM.length - 1 && v ? pct(ch[CAM[i + 1]], v) : null;
+        return `<a class="pilar${trava ? ' trava' : ''}" href="${linkEtapa(k)}" style="grid-column:${i + 2}" data-dica="${esc(plural(v, 'lead', 'leads'))}|${esc(nomeEtapa(k))} · ${pct(v, total)}% dos que entraram${segue !== null ? ` · ${segue}% seguiram para ${esc(nomeEtapa(CAM[i + 1]))}` : ''}${meta != null ? ' · meta ' + meta + '%' : ''}">
+          <em style="bottom:max(${alt}%, 12px)">${v}</em><i style="height:${alt}%"></i></a>
+        <div class="rot${trava ? ' trava' : ''}" style="grid-column:${i + 2}"><b>${esc(nomeEtapa(k))}</b><small>${i ? pct(v, total) + '% do total' : 'entraram'}</small>${meta != null && total ? `<em class="meta ${pct(v, total) >= meta ? 'ok' : 'baixo'}">${pct(v, total) >= meta ? '✓ ' : ''}<span>meta </span>${meta}%</em>` : ''}</div>`; }).join('')}
+    </div>
+    ${totalSaiu ? `<div class="saidas"><span>Saíram sem fechar <b>${totalSaiu}</b></span>${Object.entries(fa.saiu).filter(([, v]) => v).map(([k, v]) => `<span class="pilula-s">${esc(nomeEtapa(k))} · ${v}</span>`).join('')}</div>` : ''}
   </section>
 
   <section class="card">
-    <div class="card-topo"><div><h2>O que procuram</h2><p>Leads novos no período</p></div>
-      ${abasProcura.length > 1 ? `<nav class="seg seg-mini" id="aba-procura">${abasProcura.map(([k, [nome]]) => `<button type="button" data-procura="${k}" class="${k === abaProcura ? 'on' : ''}">${nome}</button>`).join('')}</nav>` : ''}</div>
-    <div id="lista-procura">${abasProcura.length ? listaProcura(abaProcura) : '<p class="vazio">Nenhum lead novo no período.</p>'}</div>
+    <div class="card-topo"><div><h2>O que converte</h2><p>Leads do período: quantos foram à visita e quantos compraram</p></div></div>
+    <nav class="seg seg-mini" id="aba-quebra" aria-label="Agrupar por">${abas.map(k => `<button type="button" data-quebra="${k}" class="${k === abaQuebra ? 'on' : ''}">${QUEBRAS[k][0]}</button>`).join('')}</nav>
+    <div id="lista-quebra">${listaQuebra(abaQuebra)}</div>
   </section>
 </div>`;
 
@@ -264,12 +251,12 @@ registrarTela('dashboard', { titulo: 'Dashboard', desenhar(main) {
     tabela.hidden = !ver; $('#graf-dias').hidden = ver;
     e.currentTarget.textContent = ver ? 'Ver gráfico' : 'Ver números'; e.currentTarget.setAttribute('aria-pressed', String(ver));
   });
-  // trocar Empreendimento / Tipologia / Objetivo na hora
-  $('#aba-procura')?.addEventListener('click', e => {
-    const b = e.target.closest('[data-procura]'); if (!b) return;
-    abaProcura = b.dataset.procura;
-    $$('#aba-procura button').forEach(x => x.classList.toggle('on', x === b));
-    $('#lista-procura').innerHTML = listaProcura(abaProcura);
+  // trocar Origem / Campanha / Empreendimento / Tipologia / Objetivo na hora
+  $('#aba-quebra').addEventListener('click', e => {
+    const b = e.target.closest('[data-quebra]'); if (!b) return;
+    abaQuebra = b.dataset.quebra;
+    $$('#aba-quebra button').forEach(x => x.classList.toggle('on', x === b));
+    $('#lista-quebra').innerHTML = listaQuebra(abaQuebra);
   });
   pintarAgenda();
 } });

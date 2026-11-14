@@ -11,10 +11,10 @@ const ETAPAS = {
   novo: 'Novo', primeiro_contato: 'Primeiro contato', respondeu: 'Respondeu', nao_respondeu: 'Não respondeu',
   visita_agendada: 'Visita agendada', proposta: 'Proposta', venda: 'Venda', perdido: 'Perdido', sem_intencao: 'Sem intenção'
 };
-// Cor de cada etapa (petróleo da marca no começo, dourado na proposta; coral = alguém esperando você, como as bolhas do hub)
+// Cor de cada etapa (Novo é neutro: ainda ninguém mexeu; coral = alguém esperando você)
 const CORES = {
-  novo: '#0E5B66', primeiro_contato: '#3B8A94', respondeu: '#E4573D', nao_respondeu: '#D97706', visita_agendada: '#2563EB',
-  proposta: '#B9852F', venda: '#16A34A', perdido: '#BE123C', sem_intencao: '#8E9B98'
+  novo: '#64748B', primeiro_contato: '#8B5CF6', respondeu: '#F0524F', nao_respondeu: '#D97706', visita_agendada: '#2563EB',
+  proposta: '#0D9488', venda: '#16A34A', perdido: '#BE123C', sem_intencao: '#8E8DA3'
 };
 // Etapas que pedem atenção: ficam em destaque no dashboard e no quadro
 const ATENCAO = ['respondeu', 'visita_agendada'];
@@ -95,7 +95,9 @@ const ICONES = {
   lua: '<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/>',
   sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   voltar: '<path d="m15 18-6-6 6-6"/>',
-  recolher: '<path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/>',
+  painel: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
+  diagonal: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+  seta: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
   mais1: '<path d="M12 5v14M5 12h14"/>',
   alerta: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   relogio: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
@@ -402,15 +404,19 @@ document.addEventListener('input', e => {
 });
 addEventListener('popstate', () => mostrar());
 
-// ===== Casca: menu de vidro (como o hub) e área das telas =====
-const LOGO = MARCA_CRM.logo ? `<img src="${esc(MARCA_CRM.logo)}" alt="">`
-  : '<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="28" style="fill:var(--roxo)"/><path fill="#FFFFFF" d="M24 50 50 28l26 22v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5-5z"/><rect x="43" y="56" width="14" height="21" rx="3" style="fill:var(--roxo)"/><circle cx="74" cy="26" r="7" style="fill:var(--acento)"/></svg>';
+// ===== Casca: menu de vidro e área das telas =====
+// Logo do CRM: um funil (três barras que afinam até a venda, em verde-limão) num quadrado preto
+const LOGO_CRM = '<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="30" fill="#141412"/><rect x="22" y="27" width="56" height="12" rx="6" fill="#F4F3EE"/><rect x="31" y="45" width="38" height="12" rx="6" fill="#A9A79F"/><rect x="40" y="63" width="20" height="12" rx="6" fill="#C5F277"/></svg>';
+const LOGO = MARCA_CRM.logo ? `<img src="${esc(MARCA_CRM.logo)}" alt="">` : LOGO_CRM;
 const INICIAIS_CONTA = (String(MARCA_CRM.iniciais || '').trim() || EMPRESA.split(/\s+/).filter(p => p.length > 2).slice(0, 2).map(p => p[0]).join('') || 'C').toUpperCase().slice(0, 3);
 const escuro = () => document.documentElement.dataset.theme === 'dark';
 
-// Menu da esquerda: aberto (com os nomes e os contadores) ou recolhido (só os ícones). Abre aberto; a escolha fica neste navegador.
+// Menu da esquerda: aberto (busca, nomes e o que espera você em cada tela) ou recolhido (só as bolhas dos ícones).
+// Abre aberto; a escolha fica neste navegador.
 const CHAVE_MENU = 'hub-crm-menu';
 const menuRecolhido = () => { try { return localStorage.getItem(CHAVE_MENU) === 'recolhido'; } catch (e) { return false; } };
+const bolhaIco = nome => `<span class="ico-b">${ico(nome)}</span>`;
+const ATALHO_BUSCA = /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘K' : 'Ctrl K';
 function montarCasca() {
   document.body.className = '';
   document.body.innerHTML = `<div class="app${menuRecolhido() ? ' recolhido' : ''}">
@@ -418,13 +424,13 @@ function montarCasca() {
     <div class="lado-topo">
       ${HUB ? `<a class="logo" href="${esc(HUB)}" title="Voltar ao Hub">${LOGO}</a>` : `<span class="logo">${LOGO}</span>`}
       <span class="marca-txt"><b>CRM</b><small>${esc(EMPRESA)}</small></span>
-      <button class="recolher" id="recolher" type="button">${ico('recolher')}</button>
+      <button class="recolher" id="recolher" type="button">${ico('painel')}</button>
     </div>
-    <span class="linha"></span>
-    <div class="itens">${MENU.map(([k, nome, icone]) => `<a class="lado-btn" href="${ARQUIVOS[k]}" data-tela="${k}" aria-label="${nome}">${ico(icone)}<span class="rotulo">${nome}</span><span class="dica">${nome}</span><b class="bolha" hidden></b></a>`).join('')}</div>
+    <form class="lado-busca so-largo" id="busca-menu" role="search" title="Buscar lead">${ico('busca')}<input id="busca-lead" type="search" autocomplete="off" placeholder="Buscar lead…" aria-label="Buscar lead por nome ou telefone"><kbd>${ATALHO_BUSCA}</kbd></form>
+    <div class="itens">${MENU.map(([k, nome, icone]) => `<a class="lado-btn" href="${ARQUIVOS[k]}" data-tela="${k}" aria-label="${nome}">${bolhaIco(icone)}<span class="rotulo">${nome}</span><span class="dica">${nome}</span><b class="bolha" hidden></b></a>`).join('')}</div>
     <span class="espaco"></span>
     <div class="lado-rodape">
-      ${HUB ? `<a class="lado-btn secundario so-largo" href="${esc(HUB)}" aria-label="Voltar ao Hub">${ico('grade')}<span class="rotulo">Voltar ao Hub</span><span class="dica">Voltar ao Hub</span></a>` : ''}
+      ${HUB ? `<a class="lado-btn secundario so-largo" href="${esc(HUB)}" aria-label="Voltar ao Hub">${bolhaIco('grade')}<span class="rotulo">Voltar ao Hub</span><span class="dica">Voltar ao Hub</span></a>` : ''}
       <button class="lado-btn secundario" id="tema" type="button"></button>
       <button class="conta-btn" id="conta" type="button" aria-label="Conta e ajustes"><span class="avatar">${esc(INICIAIS_CONTA)}</span><span class="rotulo"><b>${esc(EMPRESA)}</b><small>Conta e ajustes</small></span><span class="dica">Conta e ajustes</span></button>
     </div>
@@ -437,20 +443,56 @@ function montarCasca() {
   const d = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   $('#hoje').textContent = d.charAt(0).toUpperCase() + d.slice(1);
   pintarTema();
-  $('#tema').addEventListener('click', () => {
-    const novo = escuro() ? 'light' : 'dark';
-    document.documentElement.dataset.theme = novo;
-    try { localStorage.setItem('hub-imob-tema', novo); } catch (e) {} // mesma chave do hub: no mesmo endereço, o tema é um só
-    pintarTema();
-  });
+  $('#tema').addEventListener('click', e => trocarTema(e.currentTarget));
   $('#conta').addEventListener('click', abrirConta);
   pintarRecolher();
-  $('#recolher').addEventListener('click', () => {
-    const recolher = !$('.app').classList.contains('recolhido');
-    $('.app').classList.toggle('recolhido', recolher);
-    try { localStorage.setItem(CHAVE_MENU, recolher ? 'recolhido' : 'aberto'); } catch (e) {}
-    pintarRecolher();
+  $('#recolher').addEventListener('click', () => recolherMenu(!$('.app').classList.contains('recolhido')));
+  // busca: Enter abre a lista de leads com o que foi digitado (inclui ganhos e perdidos)
+  const busca = $('#busca-menu'), campo = $('#busca-lead');
+  busca.addEventListener('submit', e => {
+    e.preventDefault();
+    const q = campo.value.trim();
+    if (!q) return;
+    campo.value = ''; campo.blur();
+    ir(ARQUIVOS.leads + '?' + new URLSearchParams({ q, todos: '1' }));
   });
+  // recolhido, a busca é só a lupa: o clique abre o menu e põe o cursor no campo
+  busca.addEventListener('click', () => { if ($('.app').classList.contains('recolhido')) focarBusca(); });
+}
+function recolherMenu(recolher) {
+  $('.app').classList.toggle('recolhido', recolher);
+  try { localStorage.setItem(CHAVE_MENU, recolher ? 'recolhido' : 'aberto'); } catch (e) {}
+  pintarRecolher();
+}
+function focarBusca() {
+  const campo = $('#busca-lead');
+  if (!campo || !campo.offsetParent && !$('.app')?.classList.contains('recolhido')) return; // no celular não há busca no menu
+  if ($('.app').classList.contains('recolhido')) recolherMenu(false);
+  campo.focus(); campo.select();
+}
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k' && $('#busca-lead') && !$('dialog[open]')) { e.preventDefault(); focarBusca(); }
+});
+
+// Troca de tema: o tema novo sai do botão num círculo que cresce até cobrir a tela (0,6 s).
+// Usa a transição de página do navegador; sem ela (navegador antigo), a troca é na hora.
+// Roda mesmo com "reduzir movimento" ligado: no Windows essa opção vem de "Efeitos de animação" desligado,
+// comum em PC de trabalho, e o efeito é curto e só acontece quando a pessoa clica.
+function trocarTema(botao) {
+  const raiz = document.documentElement, novo = escuro() ? 'light' : 'dark';
+  const aplicar = () => {
+    raiz.dataset.theme = novo;
+    try { localStorage.setItem('hub-imob-tema', novo); } catch (e) {} // mesma chave do hub: no mesmo endereço, o tema é um só
+    pintarTema();
+  };
+  if (!document.startViewTransition) return aplicar();
+  const r = botao.getBoundingClientRect(), x = r.width ? r.left + r.width / 2 : innerWidth / 2, y = r.height ? r.top + r.height / 2 : innerHeight / 2;
+  const R = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  raiz.classList.add('trocando-tema'); // sem as transições de cor durante a troca: o círculo já mostra o tema pronto
+  const t = document.startViewTransition(aplicar);
+  t.ready.then(() => raiz.animate({ clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${R}px at ${x}px ${y}px)`] },
+    { duration: 600, easing: 'cubic-bezier(.4, 0, .2, 1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
+  t.finished.finally(() => raiz.classList.remove('trocando-tema'));
 }
 function pintarRecolher() {
   const b = $('#recolher'), r = $('.app').classList.contains('recolhido');
@@ -460,20 +502,22 @@ function pintarRecolher() {
 function pintarTema() {
   const b = $('#tema'); if (!b) return;
   const rot = escuro() ? 'Modo claro' : 'Modo escuro';
-  b.innerHTML = `${ico(escuro() ? 'sol' : 'lua')}<span class="rotulo">${rot}</span><span class="dica">${rot}</span>`;
+  b.innerHTML = `${bolhaIco(escuro() ? 'sol' : 'lua')}<span class="rotulo">${rot}</span><span class="dica">${rot}</span>`;
   b.setAttribute('aria-label', rot);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', escuro() ? '#091416' : '#F3F5F4');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', escuro() ? '#0E0E0D' : '#ECEAE4');
 }
-// Tela ativa e as bolhas: leads esperando você, sem origem e follow-ups de hoje (coral quando há alguém esperando ou atrasado)
+// Tela ativa e o que espera você em cada uma: "3 esperam", "1 sem origem", "2 hoje" (coral quando há alguém esperando ou atrasado)
 function pintarMenu() {
   const fu = fuContagem(), c = contagemEtapas();
   const bolhas = { dashboard: [0, false], crm: [(c.novo || 0) + (c.respondeu || 0), (c.respondeu || 0) > 0], leads: [CRM.leads.filter(l => !l.origem).length, false], followups: [fu.atrasados + fu.hoje, fu.atrasados > 0] };
   const dicas = { crm: n => n + ' esperando você', leads: n => n + ' sem origem', followups: n => n + ' para hoje' };
+  const curtas = { crm: n => n === 1 ? 'espera' : 'esperam', leads: () => 'sem origem', followups: () => 'hoje' };
   $$('.lado-btn[data-tela]').forEach(a => {
     const k = a.dataset.tela, [n, urgente] = bolhas[k], b = $('.bolha', a), nome = MENU.find(m => m[0] === k)[1];
     a.classList.toggle('ativo', k === telaAtual);
     if (k === telaAtual) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
-    b.hidden = !n; b.textContent = n > 99 ? '99+' : n; b.classList.toggle('urgente', urgente);
+    b.hidden = !n; b.innerHTML = (n > 99 ? '99+' : n) + (curtas[k] ? `<span>${curtas[k](n)}</span>` : ''); b.classList.toggle('urgente', urgente);
+    b.title = n && dicas[k] ? dicas[k](n) : '';
     $('.dica', a).textContent = n && dicas[k] ? `${nome} · ${dicas[k](n)}` : nome;
   });
   const ex = $('#exemplo'); if (ex) ex.hidden = !DEMO;
