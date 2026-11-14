@@ -27,6 +27,13 @@ registrarTela('leads', { titulo: 'Leads', desenhar(main) {
   const ordenar = k => link({ ordem: k, dir: ordem === k && dir === 'desc' ? 'asc' : 'desc' });
   const seta = k => ordem === k ? (dir === 'desc' ? ' ↓' : ' ↑') : ' ↕';
   const valoresFiltro = c => c === 'etapa' ? Object.entries(ETAPAS) : (c === 'origem' ? [...new Set([...ORIGENS, ...valoresDe('origem')])] : valoresDe(c)).map(v => [v, v]);
+  // Quatro números da base inteira, no topo (não mudam com os filtros da tabela)
+  const hojeZ = meiaNoite(0), amanhaZ = meiaNoite(1), seteDias = meiaNoite(-6), totalBase = CRM.leads.length;
+  const novos7 = CRM.leads.filter(l => l.criado_em >= seteDias).length;
+  const perdidos = CRM.leads.filter(l => PERDIDOS.includes(l.etapa)).length;
+  const vendas = CRM.leads.filter(l => l.etapa === 'venda'), valorVendas = vendas.reduce((t, l) => t + (Number(l.valor) || 0), 0);
+  const fuPend = CRM.followups.filter(f => !f.feito_em), leadsDe = lista => new Set(lista.map(f => f.lead_id)).size;
+  const aguardando = leadsDe(fuPend), fuAtras = leadsDe(fuPend.filter(f => f.quando < hojeZ)), fuHoje = leadsDe(fuPend.filter(f => f.quando >= hojeZ && f.quando < amanhaZ));
   const algumFiltro = [...Object.keys(FILTROS), 'q', 'dias'].some(k => g(k));
 
   main.innerHTML = `
@@ -41,6 +48,14 @@ registrarTela('leads', { titulo: 'Leads', desenhar(main) {
     <button class="btn" type="button" onclick="abrirNovo()">${ico('mais1')}Novo lead</button>
   </div>
 </header>
+
+<div class="caixas c4">
+  <div class="card caixa"><b data-conta>${totalBase}</b><small>Total de leads</small><p>${novos7} nos últimos 7 dias</p></div>
+  <a class="card caixa" href="followups.html"><b data-conta>${aguardando}</b><small>Aguardando follow-up</small>
+    <p>${fuAtras || fuHoje ? [fuAtras && `<em class="atr">${plural(fuAtras, 'atrasado', 'atrasados')}</em>`, fuHoje && `${fuHoje} para hoje`].filter(Boolean).join(' · ') : 'nenhum atrasado'}</p></a>
+  <a class="card caixa" href="quadro.html?aba=perdidos"><b data-conta>${perdidos}</b><small>Leads perdidos</small><p>${totalBase ? Math.round(perdidos * 100 / totalBase) : 0}% do total</p></a>
+  <a class="card caixa" href="quadro.html?aba=ganhos"><b data-conta>${vendas.length}</b><small>Vendas</small><p>${valorVendas ? moedaCurta(valorVendas) + ' fechados' : 'nenhuma ainda'}</p></a>
+</div>
 
 <nav class="seg abas-leads">
   <a href="${esc(link({ aba: '' }))}" class="${semOrigem ? '' : 'on'}">Leads</a>

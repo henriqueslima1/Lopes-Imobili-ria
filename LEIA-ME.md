@@ -3,6 +3,10 @@
 Hub da equipe da Lopes Imobiliária. Veio do Hub ADM (repositório `hub-ferramentas`) e do CRM (repositório `crm`),
 copiando só o layout e o funcionamento. Nenhum dado de lá veio junto: o banco começa vazio.
 
+O CRM daqui acompanha o do repositório `crm` (Dashboard, quadro, Leads com os números do topo e Follow-ups com
+"Faça agora", lista e quadro), mais o que é só da Lopes: login por colaborador, corretores vindos de Colaboradores,
+a janela "Registrar a venda" e quem fez cada mudança no histórico.
+
 | O quê | Onde | Quem vê |
 |---|---|---|
 | **Início** | barra lateral | todos: saudação, resumo do dia, ícone do CRM, leads esperando, follow-ups e vendas do mês |
@@ -77,8 +81,9 @@ Projeto **Lopes Imobiliária**: serviço `hub` (este repositório, pelo `Dockerf
 | `iniciais` | botão redondo da conta do administrador |
 | `site` | link do rodapé e ação "Abrir o site" na busca (vazio = sem link) |
 | `logo` | imagem da logo na mesma pasta, ex.: `logo.png` (vazio = símbolo da casinha) |
-| `cor` | cor principal: botões, ícone do CRM, dia de hoje, gráficos |
-| `acento` | cor de destaque: cartão de vendas, detalhes |
+
+As cores são as mesmas do CRM do Henrique (preto e verde-limão, com tema escuro): ficam no estilo de
+`public_html/index.html` e `public_html/crm/estilo.css`, não no `marca.js`. O ícone do CRM é um funil preto e limão.
 
 ## Rodar no computador
 

@@ -10,9 +10,8 @@ window.MARCA = {
   saudacao: 'equipe',           // "Bom dia, equipe"
   iniciais: 'LI',               // botão redondo da conta (vazio = iniciais do nome)
   site: '',                     // site da imobiliária, ex.: 'https://www.lopesimobiliaria.com.br/' (vazio = rodapé sem link)
-  logo: '',                     // imagem da logo, ex.: 'logo.png' na mesma pasta deste arquivo (vazio = símbolo da casinha)
-  cor: '#0E5B66',               // cor principal (botões, ícone do CRM, dia de hoje). Vazio = petróleo padrão
-  acento: '#C8963E'             // cor de destaque (ícone da Agenda, detalhes). Vazio = dourado padrão
+  logo: ''                      // imagem da logo, ex.: 'logo.png' na mesma pasta deste arquivo (vazio = símbolo da casinha)
+  // As cores são as mesmas do CRM (preto e verde-limão) e ficam no estilo do hub e do CRM, não aqui.
 };
 
 /* Daqui para baixo não precisa mexer: acerta o endereço da logo para qualquer pasta. */

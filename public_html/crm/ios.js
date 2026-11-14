@@ -152,7 +152,7 @@ new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nod
 // ---------- Deslizar nas linhas (tarefas): direita = feito, esquerda = mostra ações ----------
 function deslizavel(li) {
   const frente = li.querySelector('.t-frente');
-  if (!frente || li._sw) return;
+  if (!frente || !li.querySelector('.t-fundo') || li._sw) return; // sem ações por trás (ex.: "Sem próximo passo"), não desliza
   li._sw = true;
   let x0 = null, y0 = 0, dx = 0, base = 0, horizontal = null;
   const ABRE = -150, FEITO = 90;

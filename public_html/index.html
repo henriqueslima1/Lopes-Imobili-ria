@@ -4,51 +4,45 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#F3F5F4">
+<meta name="theme-color" content="#ECEAE4">
 <title>Hub</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='28' fill='%230E5B66'/%3E%3Cpath fill='%23fff' d='M24 50 50 28l26 22v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5-5z'/%3E%3Crect x='43' y='56' width='14' height='21' rx='3' fill='%230E5B66'/%3E%3Ccircle cx='74' cy='26' r='7' fill='%23C8963E'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='30' fill='%23141412'/%3E%3Cpath fill='%23F4F3EE' d='M24 50 50 28l26 22v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5-5z'/%3E%3Crect x='43' y='56' width='14' height='21' rx='3' fill='%23141412'/%3E%3Ccircle cx='74' cy='26' r='7' fill='%23C5F277'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="marca.js"></script>
 <script>
-/* antes de pintar a tela: tema (o salvo ou o do aparelho) e as cores da marca (marca.js) */
+/* antes de pintar a tela: o tema (o salvo ou o do aparelho). As cores são as do CRM (preto e verde-limão), definidas aqui no estilo */
 (function () {
-  var r = document.documentElement, m = window.MARCA || {};
+  var r = document.documentElement;
   try {
     var t = localStorage.getItem('hub-imob-tema');
     if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) r.dataset.theme = 'dark';
   } catch (e) {}
-  var cor = function (c) { return c && window.CSS && CSS.supports && CSS.supports('color', c); };
-  if (cor(m.cor)) r.style.setProperty('--marca', m.cor);
-  if (cor(m.acento)) r.style.setProperty('--acento', m.acento);
 })();
 </script>
 <style>
 /* Hub da imobiliária: as ferramentas da equipe como aplicativos (tela inicial do iPhone) + barra lateral de vidro.
-   Mesma ideia do Hub ADM, com a cara de imobiliária: petróleo (confiança) + dourado (padrão alto).
-   Claro por padrão: névoa perolada com brilhos de petróleo e areia.
-   Escuro: noite petróleo com aurora verde-azulada e dourada, vidro com reflexo e ícones que brilham.
-   A cor principal e a de destaque vêm do marca.js (--marca e --acento); o resto deriva delas. */
+   Mesma identidade do CRM: vidro fosco em tons neutros e quentes, preto e verde-limão.
+   Preto = ação e item ativo; limão = destaque; o resto é neutro. No escuro, o limão vira a cor de ação.
+   --marca e --acento ficaram com esses nomes para não mexer no resto do estilo: --marca é o preto, --acento o limão. */
 :root {
-  --marca: #0E5B66; --acento: #C8963E;
-  --bg: #F3F5F4;
-  --brilho1: color-mix(in srgb, var(--marca) 24%, transparent);
-  --brilho2: color-mix(in srgb, var(--acento) 34%, transparent);
-  --brilho3: color-mix(in srgb, var(--marca) 13%, transparent);
-  --vidro: rgba(255, 255, 255, .72); --vidro-borda: rgba(255, 255, 255, .95); --reflexo: inset 0 1px 0 rgba(255, 255, 255, .9);
-  --forte: #FFFFFF; --borda: rgba(21, 32, 31, .08); --borda2: rgba(21, 32, 31, .14);
-  --texto: #15201F; --suave: #55625F; --apagado: #8E9B98; --titulo2: #A3AFAC; --leve: rgba(21, 32, 31, .05);
-  --pri: var(--marca); --pri2: color-mix(in oklab, var(--marca) 70%, white);
-  --pri-claro: color-mix(in oklab, var(--marca) 14%, white); --pri-texto: color-mix(in oklab, var(--marca) 85%, black);
-  --destaque: var(--marca); --alerta: #E4573D;
-  --brilho-marca: color-mix(in srgb, var(--marca) 30%, transparent); --brilho-acento: color-mix(in srgb, var(--acento) 34%, transparent);
-  --sombra: 0 1px 2px rgba(21, 32, 31, .04), 0 18px 44px color-mix(in srgb, var(--marca) 11%, transparent);
-  --sombra-forte: 0 28px 60px color-mix(in srgb, var(--marca) 20%, transparent);
+  --marca: #141412; --acento: #C5F277;
+  --bg: #ECEAE4;
+  --brilho1: rgba(197, 242, 119, .6); --brilho2: rgba(120, 116, 104, .2); --brilho3: rgba(197, 242, 119, .34);
+  --vidro: rgba(250, 249, 246, .6); --vidro-borda: rgba(255, 255, 255, .85); --reflexo: inset 0 1px 0 rgba(255, 255, 255, .9);
+  --forte: #FDFCFA; --borda: rgba(20, 20, 18, .07); --borda2: rgba(20, 20, 18, .14);
+  --texto: #141412; --suave: #5F5D56; --apagado: #85827A; --titulo2: #A5A29A; --leve: rgba(20, 20, 18, .055);
+  --pri: #141412; --sobre-pri: #FFFFFF; --pri2: #45443F;
+  --pri-claro: #ECF6D8; --pri-texto: #47750F;
+  --destaque: #47750F; --alerta: #E5484D;
+  --brilho-marca: rgba(20, 20, 18, .2); --brilho-acento: rgba(150, 205, 50, .4);
+  --sombra: 0 1px 2px rgba(20, 20, 18, .04), 0 18px 44px rgba(40, 38, 30, .08);
+  --sombra-forte: 0 28px 60px rgba(30, 28, 20, .2);
   --ok: #15803D; --ok-bg: #DCFCE7; --atencao: #A16207; --atencao-bg: #FEF3C7;
-  --widget2-bg: color-mix(in oklab, var(--acento) 26%, white); --widget2-txt: #15201F; --widget2-sub: color-mix(in oklab, var(--acento) 45%, #2A2216);
-  --ativo-bg: #15201F; --ativo-txt: #FFFFFF;
-  --folha-bg: #FFFFFF; --campo-bg: #F5F7F6; --fundo-escuro: rgba(21, 32, 31, .32);
+  --widget2-bg: linear-gradient(150deg, #E6FBA6 0%, #C5F277 52%, #A9DC4E 100%); --widget2-txt: #141412; --widget2-sub: rgba(20, 20, 18, .7);
+  --ativo-bg: #141412; --ativo-txt: #FFFFFF;
+  --folha-bg: #FDFCFA; --campo-bg: #F4F2ED; --fundo-escuro: rgba(20, 20, 18, .36);
   --erro: #DC2626;
   --pill: 999px;
   --ease: cubic-bezier(.32, .72, 0, 1); --spring: cubic-bezier(.34, 1.56, .64, 1);
@@ -56,22 +50,20 @@
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --bg: #091416;
-  --brilho1: color-mix(in srgb, var(--marca) 58%, transparent);
-  --brilho2: color-mix(in srgb, var(--acento) 18%, transparent);
-  --brilho3: rgba(38, 104, 160, .26);
-  --vidro: rgba(255, 255, 255, .055); --vidro-borda: rgba(255, 255, 255, .1); --reflexo: inset 0 1px 0 rgba(255, 255, 255, .09);
-  --forte: #12262A; --borda: rgba(255, 255, 255, .09); --borda2: rgba(255, 255, 255, .16);
-  --texto: #EEF5F4; --suave: #A9BCB9; --apagado: #7A918D; --titulo2: #5F7B77; --leve: rgba(255, 255, 255, .07);
-  --pri: color-mix(in oklab, var(--marca) 82%, white); --pri2: color-mix(in oklab, var(--marca) 50%, white);
-  --pri-claro: color-mix(in srgb, var(--marca) 34%, transparent); --pri-texto: color-mix(in oklab, var(--marca) 25%, white);
-  --destaque: color-mix(in oklab, var(--marca) 38%, white);
-  --brilho-marca: color-mix(in srgb, var(--pri) 50%, transparent); --brilho-acento: color-mix(in srgb, var(--acento) 42%, transparent);
-  --sombra: 0 18px 44px rgba(0, 6, 8, .45); --sombra-forte: 0 30px 70px rgba(0, 6, 8, .6);
+  --bg: #0E0E0D;
+  --brilho1: rgba(160, 220, 70, .17); --brilho2: rgba(255, 255, 255, .05); --brilho3: rgba(130, 180, 60, .1);
+  --vidro: rgba(255, 255, 255, .05); --vidro-borda: rgba(255, 255, 255, .1); --reflexo: inset 0 1px 0 rgba(255, 255, 255, .08);
+  --forte: #191918; --borda: rgba(255, 255, 255, .08); --borda2: rgba(255, 255, 255, .16);
+  --texto: #F4F3EE; --suave: #B5B3AA; --apagado: #8A887F; --titulo2: #6F6D66; --leve: rgba(255, 255, 255, .065);
+  --pri: #C5F277; --sobre-pri: #141412; --pri2: #A9DC4E;
+  --pri-claro: rgba(197, 242, 119, .14); --pri-texto: #C5F277;
+  --destaque: #C5F277; --alerta: #FF6369;
+  --brilho-marca: rgba(197, 242, 119, .28); --brilho-acento: rgba(197, 242, 119, .3);
+  --sombra: 0 18px 44px rgba(0, 0, 0, .45); --sombra-forte: 0 30px 70px rgba(0, 0, 0, .6);
   --ok: #6EE7A0; --ok-bg: rgba(74, 222, 128, .14); --atencao: #FCD34D; --atencao-bg: rgba(251, 191, 36, .14);
-  --widget2-bg: linear-gradient(150deg, color-mix(in oklab, var(--marca) 72%, #091416) 0%, #0E2427 100%); --widget2-txt: #EEF5F4; --widget2-sub: color-mix(in oklab, var(--acento) 55%, white);
-  --ativo-bg: #FFFFFF; --ativo-txt: #091416;
-  --folha-bg: #0F2124; --campo-bg: rgba(255, 255, 255, .05); --fundo-escuro: rgba(0, 6, 8, .6);
+  --widget2-bg: linear-gradient(160deg, #2B2E23 0%, #1C1D19 100%); --widget2-txt: #F4F3EE; --widget2-sub: #C5F277;
+  --ativo-bg: #F4F3EE; --ativo-txt: #141412;
+  --folha-bg: #1B1B19; --campo-bg: rgba(255, 255, 255, .05); --fundo-escuro: rgba(0, 0, 0, .6);
   --erro: #F87171;
   color-scheme: dark;
 }
@@ -79,15 +71,9 @@
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 body { background: var(--bg); color: var(--texto); font-family: var(--font); font-size: 14px; -webkit-font-smoothing: antialiased; line-height: 1.45; min-height: 100vh; overflow-x: clip; transition: background .5s, color .5s; }
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(65vmax 50vmax at 0% -10%, var(--brilho1), transparent 62%),
-              radial-gradient(50vmax 40vmax at 105% -5%, var(--brilho2), transparent 60%),
-              radial-gradient(60vmax 50vmax at 85% 110%, var(--brilho3), transparent 60%); }
-/* no escuro, um pó de estrelas bem discreto por cima da aurora */
-:root[data-theme="dark"] body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
-  background-image: radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.7), transparent 60%), radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,.6), transparent 60%),
-    radial-gradient(1.5px 1.5px at 64% 42%, rgba(255,255,255,.5), transparent 60%), radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,.55), transparent 60%),
-    radial-gradient(1px 1px at 88% 78%, rgba(255,255,255,.5), transparent 60%), radial-gradient(1.5px 1.5px at 46% 88%, rgba(255,255,255,.4), transparent 60%),
-    radial-gradient(1px 1px at 22% 40%, rgba(255,255,255,.45), transparent 60%), radial-gradient(1px 1px at 92% 46%, rgba(255,255,255,.5), transparent 60%); }
+  background: radial-gradient(46vmax 38vmax at 102% -4%, var(--brilho1), transparent 62%),
+              radial-gradient(52vmax 44vmax at -8% 42%, var(--brilho2), transparent 60%),
+              radial-gradient(48vmax 38vmax at 62% 116%, var(--brilho3), transparent 60%); }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--pri) 50%, transparent); outline-offset: 3px; }
@@ -125,7 +111,7 @@ img { max-width: 100%; }
 .topo .exemplo { background: var(--pri-claro); color: var(--pri-texto); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: var(--pill); }
 .ola { text-align: center; margin-top: clamp(30px, 6vh, 64px); }
 .ola p { font-size: 16px; font-weight: 600; color: var(--destaque); }
-.ola h1 { font-size: clamp(36px, 5.4vw, 66px); font-weight: 800; letter-spacing: -.05em; line-height: 1.02; margin-top: 8px; text-wrap: balance; }
+.ola h1 { font-size: clamp(36px, 5.4vw, 66px); font-weight: 500; letter-spacing: -.045em; line-height: 1.02; margin-top: 8px; text-wrap: balance; }
 .ola h1 span { color: var(--titulo2); }
 
 .miolo { display: flex; flex-direction: column; gap: clamp(36px, 5vh, 52px); align-items: center; margin-top: clamp(34px, 6vh, 60px); }
@@ -134,7 +120,7 @@ img { max-width: 100%; }
 .widget { display: block; border-radius: 30px; padding: 22px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: surge .8s var(--ease) both; transition: transform .5s var(--spring); }
 @media (hover: hover) { .widget:hover { transform: translateY(-3px); } }
 .widget small { display: block; font-size: 13px; font-weight: 600; color: var(--suave); }
-.widget b { display: block; font-size: 34px; font-weight: 800; letter-spacing: -.045em; margin-top: 6px; line-height: 1.1; }
+.widget b { display: block; font-size: 34px; font-weight: 400; letter-spacing: -.05em; margin-top: 6px; line-height: 1.1; }
 .widget p { font-size: 13px; color: var(--suave); margin-top: 8px; }
 .widget.w2 { background: var(--widget2-bg); border-color: transparent; color: var(--widget2-txt); }
 .widget.w2 small, .widget.w2 p { color: var(--widget2-sub); }
@@ -150,9 +136,14 @@ img { max-width: 100%; }
 .app-ic .nome { font-size: 16px; font-weight: 700; line-height: 1.2; }
 .app-ic .desc { font-size: 13px; color: var(--suave); line-height: 1.35; margin-top: -6px; white-space: nowrap; }
 .app-ic .bolha { position: absolute; top: -8px; right: -8px; min-width: 34px; height: 34px; padding: 0 8px; border-radius: 17px; background: var(--alerta); color: #fff; font-size: 15px; font-weight: 800; display: grid; place-items: center; border: 3px solid var(--bg); }
-.cor-marca { background: linear-gradient(150deg, var(--pri2), var(--marca)); box-shadow: 0 20px 40px var(--brilho-marca), inset 0 1px 0 rgba(255, 255, 255, .35); }
-.cor-acento { background: linear-gradient(150deg, color-mix(in oklab, var(--acento) 62%, white), color-mix(in oklab, var(--acento) 88%, black)); box-shadow: 0 20px 40px var(--brilho-acento), inset 0 1px 0 rgba(255, 255, 255, .4); }
-:root[data-theme="dark"] .cor-marca { background: linear-gradient(150deg, var(--pri2), color-mix(in oklab, var(--marca) 90%, white)); }
+.cor-marca { background: linear-gradient(150deg, #45443F, #141412); box-shadow: 0 20px 40px var(--brilho-marca), inset 0 1px 0 rgba(255, 255, 255, .2); }
+.cor-acento { background: linear-gradient(150deg, #E6FBA6, #A9DC4E); color: #141412 !important; box-shadow: 0 20px 40px var(--brilho-acento), inset 0 1px 0 rgba(255, 255, 255, .6); }
+:root[data-theme="dark"] .cor-marca { background: linear-gradient(150deg, #3A3A36, #1E1E1C); box-shadow: 0 20px 40px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .12); }
+/* o ícone do CRM é a logo do CRM: o funil preto e limão */
+.cor-crm { background: #141412; box-shadow: 0 20px 40px var(--brilho-marca), inset 0 1px 0 rgba(255, 255, 255, .14); }
+:root[data-theme="dark"] .cor-crm { box-shadow: 0 20px 40px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .12); }
+.cor-crm svg { width: 64%; height: 64%; }
+.mini.cor-crm svg { width: 70%; height: 70%; }
 @keyframes surge { from { opacity: 0; transform: translateY(24px) scale(.96); filter: blur(8px); } }
 
 .rodape { text-align: center; color: var(--apagado); font-size: 13px; margin-top: auto; padding-top: 48px; }
@@ -172,7 +163,7 @@ img { max-width: 100%; }
   .miolo { gap: 28px; }
   .widgets { width: min(100%, 560px); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 4px; }
   .widgets::-webkit-scrollbar { display: none; }
-  .widgets .widget { min-width: 230px; flex: 1 0 230px; scroll-snap-align: start; box-shadow: 0 1px 2px rgba(21, 32, 31, .04), 0 8px 18px color-mix(in srgb, var(--marca) 9%, transparent), var(--reflexo); }
+  .widgets .widget { min-width: 230px; flex: 1 0 230px; scroll-snap-align: start; box-shadow: 0 1px 2px rgba(20, 20, 18, .04), 0 8px 18px color-mix(in srgb, var(--marca) 9%, transparent), var(--reflexo); }
 }
 @media (max-width: 760px) {
   /* os cartões rolam de ponta a ponta da tela, sem cortar a sombra */
@@ -203,7 +194,7 @@ img { max-width: 100%; }
 .fundo.on { opacity: 1; }
 .folha { position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow: auto; background: var(--folha-bg); border: 1px solid var(--borda); border-radius: 30px 30px 0 0;
   padding: 10px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
-  transform: translateY(105%); transition: transform .55s var(--ease); box-shadow: 0 -20px 60px rgba(21, 32, 31, .15), var(--reflexo); }
+  transform: translateY(105%); transition: transform .55s var(--ease); box-shadow: 0 -20px 60px rgba(20, 20, 18, .15), var(--reflexo); }
 .folha.on { transform: none; }
 .folha:focus { outline: none; }
 @media (min-width: 700px) { .folha { left: 50%; right: auto; bottom: 50%; width: 520px; border-radius: 30px; transform: translate(-50%, 60%) scale(.96); opacity: 0; transition: transform .5s var(--ease), opacity .3s; }
@@ -216,7 +207,7 @@ img { max-width: 100%; }
 .campo:focus { border-color: var(--pri2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pri) 18%, transparent); }
 .fim-folha { display: flex; gap: 10px; margin-top: 14px; }
 .fim-folha button { flex: 1; height: 52px; border-radius: 16px; font-weight: 700; font-size: 16px; }
-.b-salvar { background: var(--pri); color: #fff; }
+.b-salvar { background: var(--pri); color: var(--sobre-pri); }
 .b-cancelar { background: var(--leve); border: 1px solid var(--borda2); }
 .erro-f { color: var(--erro); font-size: 14px; min-height: 18px; }
 
@@ -261,12 +252,12 @@ img { max-width: 100%; }
 /* ---------- aba Agenda: agenda da equipe e reunião rápida ---------- */
 .painel { margin-top: clamp(24px, 4vh, 40px); }
 .painel-cab { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
-.painel-cab h2 { font-size: clamp(26px, 3vw, 34px); font-weight: 800; letter-spacing: -.04em; line-height: 1.1; }
+.painel-cab h2 { font-size: clamp(26px, 3vw, 34px); font-weight: 500; letter-spacing: -.04em; line-height: 1.1; }
 .painel-cab p { color: var(--suave); font-size: 15px; margin-top: 4px; }
 .painel-acoes { display: flex; align-items: center; gap: 10px; }
 .seg { display: flex; padding: 4px; border-radius: var(--pill); background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--reflexo); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .seg button { height: 38px; padding: 0 16px; border-radius: var(--pill); font-size: 14px; font-weight: 600; color: var(--suave); transition: background .25s, color .25s; }
-.seg button.on { background: var(--forte); color: var(--texto); box-shadow: 0 1px 3px rgba(21, 32, 31, .12); }
+.seg button.on { background: var(--forte); color: var(--texto); box-shadow: 0 1px 3px rgba(20, 20, 18, .12); }
 .painel-grade { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
 .lado-col { display: flex; flex-direction: column; gap: 20px; }
 .agenda-card, .meet-card { border-radius: 30px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
@@ -282,7 +273,7 @@ img { max-width: 100%; }
 /* calendário do mês */
 .cal { padding: 22px; }
 .cal-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
-.cal-cab b { font-size: 22px; font-weight: 800; letter-spacing: -.03em; }
+.cal-cab b { font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
 .cal-nav { display: flex; gap: 8px; }
 .cal-nav button { height: 40px; min-width: 40px; padding: 0 12px; border-radius: 12px; background: var(--forte); border: 1px solid var(--borda); font-weight: 600; font-size: 14px; display: grid; place-items: center; }
 .cal-nav svg { width: 16px; height: 16px; }
@@ -290,11 +281,11 @@ img { max-width: 100%; }
 .cal-sem span { font-size: 12px; font-weight: 700; color: var(--suave); text-transform: uppercase; letter-spacing: .06em; padding: 0 4px 6px; }
 .cal-dia { min-height: 84px; border-radius: 16px; background: var(--forte); border: 1px solid var(--borda); padding: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 15px; font-weight: 700; transition: transform .3s var(--spring), border-color .2s; }
 .cal-dia small { font-size: 11px; font-weight: 600; color: var(--acento); line-height: 1.2; }
-:root:not([data-theme="dark"]) .cal-dia small { color: color-mix(in oklab, var(--acento) 75%, black); }
+:root:not([data-theme="dark"]) .cal-dia small { color: var(--pri-texto); }
 .cal-dia.fds { background: var(--leve); }
 .cal-dia.fora { opacity: .4; }
-.cal-dia.hoje { background: var(--pri); color: #fff; border-color: transparent; box-shadow: 0 10px 24px var(--brilho-marca); }
-.cal-dia.hoje small { color: #fff !important; }
+.cal-dia.hoje { background: var(--pri); color: var(--sobre-pri); border-color: transparent; box-shadow: 0 10px 24px var(--brilho-marca); }
+.cal-dia.hoje small { color: var(--sobre-pri) !important; }
 @media (hover: hover) { .cal-dia:hover { transform: translateY(-2px); border-color: var(--borda2); } }
 .cal-aviso { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 18px; padding: 14px 16px; border-radius: 18px; background: var(--leve); font-size: 14px; color: var(--suave); }
 .cal-aviso .b-salvar { height: 44px; padding: 0 18px; border-radius: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
@@ -315,7 +306,7 @@ img { max-width: 100%; }
 .meet-topo small { display: block; font-size: 13px; color: var(--suave); }
 .meet-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; padding: 0 16px; border-radius: 16px; background: var(--forte); border: 1px solid var(--borda); font-size: 15px; font-weight: 600; text-align: center; }
 .meet-btn svg { width: 18px; height: 18px; flex: none; }
-.meet-btn.principal { background: var(--pri); border-color: transparent; color: #fff; font-weight: 700; box-shadow: 0 12px 28px var(--brilho-marca); }
+.meet-btn.principal { background: var(--pri); border-color: transparent; color: var(--sobre-pri); font-weight: 700; box-shadow: 0 12px 28px var(--brilho-marca); }
 @media (hover: hover) { .meet-btn:hover, .ag-links a:hover { filter: brightness(1.06); } .meet-btn:not(.principal):hover { border-color: var(--borda2); } }
 .meet-sala { display: flex; gap: 8px; }
 .meet-sala .meet-btn { flex: 1; }
@@ -373,14 +364,14 @@ img { max-width: 100%; }
 .b-mini { height: 50px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--borda2); background: var(--forte); font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
 .b-mini svg { width: 16px; height: 16px; }
 .b-excluir { width: 100%; height: 48px; border-radius: 16px; color: var(--erro); font-weight: 600; margin-top: 4px; }
-.b-novo { height: 42px; padding: 0 18px; border-radius: var(--pill); background: var(--pri); color: #fff; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 10px 24px var(--brilho-marca); white-space: nowrap; }
+.b-novo { height: 42px; padding: 0 18px; border-radius: var(--pill); background: var(--pri); color: var(--sobre-pri); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 10px 24px var(--brilho-marca); white-space: nowrap; }
 .b-novo svg { width: 16px; height: 16px; }
 
 /* ---------- aba Colaboradores ---------- */
 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
 .kpi { border-radius: 24px; padding: 18px 20px; background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--sombra), var(--reflexo); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: surge .7s var(--ease) both; min-width: 0; }
 .kpi small { display: block; font-size: 13px; font-weight: 600; color: var(--suave); }
-.kpi b { display: block; font-size: 28px; font-weight: 800; letter-spacing: -.04em; margin-top: 4px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi b { display: block; font-size: 28px; font-weight: 400; letter-spacing: -.045em; margin-top: 4px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kpi p { font-size: 12.5px; color: var(--suave); margin-top: 4px; }
 .kpi.destaque { background: var(--widget2-bg); border-color: transparent; color: var(--widget2-txt); }
 .kpi.destaque small, .kpi.destaque p { color: var(--widget2-sub); }
@@ -389,14 +380,15 @@ img { max-width: 100%; }
 @media (hover: hover) { .colab:hover { transform: translateY(-3px); border-color: var(--borda2); } }
 .colab.inativo { opacity: .62; }
 .colab-topo { display: flex; align-items: center; gap: 12px; padding-right: 34px; }
-.avatar { width: 46px; height: 46px; border-radius: 16px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px; flex: none; background: var(--av, var(--pri)); }
+.avatar { width: 46px; height: 46px; border-radius: 16px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px; flex: none; background: var(--av, #45443F); }
+:root[data-theme="dark"] .avatar { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
 .colab-nome { min-width: 0; flex: 1; }
 .colab-nome b, .colab-nome small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .colab-nome b { font-size: 16px; }
 .colab-nome small { font-size: 13px; color: var(--suave); }
 .pos { position: absolute; top: 16px; right: 16px; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; display: grid; place-items: center; font-size: 12.5px; font-weight: 800; background: var(--leve); color: var(--suave); }
-.pos.p1 { background: color-mix(in oklab, var(--acento) 28%, transparent); color: color-mix(in oklab, var(--acento) 70%, var(--texto)); }
-.colab-venda b { font-size: 26px; font-weight: 800; letter-spacing: -.04em; }
+.pos.p1 { background: var(--acento); color: #141412; }
+.colab-venda b { font-size: 26px; font-weight: 400; letter-spacing: -.04em; }
 .colab-venda small { font-size: 13px; color: var(--suave); margin-left: 6px; }
 .barra { height: 8px; border-radius: 4px; background: var(--leve); overflow: hidden; }
 .barra i { display: block; height: 100%; width: var(--p, 0%); border-radius: 4px; background: linear-gradient(90deg, var(--pri2), var(--pri)); }
@@ -431,7 +423,7 @@ img { max-width: 100%; }
 .mini-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .mini-kpis div { padding: 12px; border-radius: 16px; background: var(--campo-bg); min-width: 0; }
 .mini-kpis small { display: block; font-size: 12px; color: var(--suave); font-weight: 600; }
-.mini-kpis b { display: block; font-size: 18px; font-weight: 800; letter-spacing: -.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-kpis b { display: block; font-size: 18px; font-weight: 500; letter-spacing: -.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lista-simples { list-style: none; display: grid; gap: 6px; }
 .lista-simples li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--campo-bg); font-size: 14px; }
 .lista-simples li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -461,7 +453,7 @@ img { max-width: 100%; }
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <!-- símbolo neutro (casinha) enquanto a logo da imobiliária não estiver no marca.js -->
-    <g id="logo-marca"><rect width="100" height="100" rx="28" style="fill:var(--pri)"/><path fill="#FFFFFF" d="M24 50 50 28l26 22v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5-5z"/><rect x="43" y="56" width="14" height="21" rx="3" style="fill:var(--pri)"/><circle cx="74" cy="26" r="7" style="fill:var(--acento)"/></g>
+    <g id="logo-marca"><rect width="100" height="100" rx="30" fill="#141412"/><path fill="#F4F3EE" d="M24 50 50 28l26 22v22a5 5 0 0 1-5 5H29a5 5 0 0 1-5-5z"/><rect x="43" y="56" width="14" height="21" rx="3" fill="#141412"/><circle cx="74" cy="26" r="7" fill="#C5F277"/></g>
   </defs>
 </svg>
 
@@ -563,7 +555,9 @@ img { max-width: 100%; }
   const iniciaisDe = nome => { const p = String(nome || '').trim().split(/\s+/); return (((p[0] || '')[0] || '') + (p.length > 1 ? (p[p.length - 1][0] || '') : '')).toUpperCase(); };
   const primeiroNome = nome => String(nome || '').trim().split(/\s+/)[0] || '';
 
-  const svg = (d, w = 2) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  // logo do CRM: três barras que afinam até a venda (a última em limão)
+  const LOGO_CRM = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="3.6" rx="1.8" fill="#F4F3EE"/><rect x="6" y="10.2" width="12" height="3.6" rx="1.8" fill="#A9A79F"/><rect x="9" y="15.4" width="6" height="3.6" rx="1.8" fill="#C5F277"/></svg>';
+  const svg = (d, w = 2) => d === 'logoCrm' ? LOGO_CRM : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const IC = {
     inicio: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
     pessoas: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 20a6.5 6.5 0 0 0-3-5.5"/>',
@@ -574,6 +568,7 @@ img { max-width: 100%; }
     funil: '<path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/>',
     relogio: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     pronto: '<path d="m5 12 5 5L20 7"/>',
+    logoCrm: 'logoCrm',
     lua: '<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/>',
     sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     mais: '<path d="M12 5v14M5 12h14"/>',
@@ -606,7 +601,7 @@ img { max-width: 100%; }
 
   // ferramentas da tela inicial (a Agenda e os Colaboradores ficam só na barra lateral)
   const FERRAMENTAS = [
-    { id: 'crm', nome: 'CRM', desc: 'Leads e follow-ups', url: CRM, icone: 'pessoas', cor: 'marca' }
+    { id: 'crm', nome: 'CRM', desc: 'Leads e follow-ups', url: CRM, icone: 'logoCrm', cor: 'crm' }
   ];
 
   // ---------- quem está logado ----------
@@ -704,7 +699,7 @@ img { max-width: 100%; }
     if (s < 86400) return 'há ' + Math.floor(s / 3600) + ' h';
     const n = Math.floor(s / 86400); return 'há ' + n + (n === 1 ? ' dia' : ' dias');
   }
-  const CORES_AVATAR = ['#0E5B66', '#B9852F', '#E4573D', '#2563EB', '#15803D', '#0891B2', '#9A3412', '#475569'];
+  const CORES_AVATAR = ['#141412', '#3E7D18', '#E5484D', '#2563EB', '#B45309', '#0891B2', '#7C3AED', '#475569'];
   const corDe = nome => { let h = 0; for (const c of String(nome)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return CORES_AVATAR[h % CORES_AVATAR.length]; };
   const wa = tel => { let d = String(tel || '').replace(/\D/g, ''); if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d; };
 
@@ -921,7 +916,7 @@ img { max-width: 100%; }
 
   // ---------- agenda da equipe (Google Agenda) e reunião rápida (Google Meet) ----------
   // As agendas de cada pessoa e a sala fixa do Meet ficam salvas neste navegador.
-  const CORES_AGENDA = ['#0E5B66', '#C8963E', '#E4573D', '#2563EB', '#16A34A', '#7C3AED'];
+  const CORES_AGENDA = ['#3E7D18', '#141412', '#E5484D', '#2563EB', '#B45309', '#7C3AED'];
   let agenda = { pessoas: [], sala: '', modo: '' };
   try { agenda = Object.assign(agenda, JSON.parse(lerGuardado('agenda-v1') || '{}')); } catch (e) {}
   if (!Array.isArray(agenda.pessoas)) agenda.pessoas = [];
@@ -1252,7 +1247,7 @@ img { max-width: 100%; }
     $('#tema').innerHTML = svg(escuro ? IC.sol : IC.lua);
     $('#tema').setAttribute('aria-label', escuro ? 'Modo claro' : 'Modo escuro');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', escuro ? '#091416' : '#F3F5F4');
+    if (meta) meta.setAttribute('content', escuro ? '#0E0E0D' : '#ECEAE4');
   }
   $('#tema').addEventListener('click', () => {
     const escuro = document.documentElement.dataset.theme !== 'dark';
