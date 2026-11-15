@@ -337,11 +337,16 @@ function ccInput(e, st) {
   return true;
 }
 // Grava: conclui (follow-up ou visita) e, se marcado, agenda o próximo. Devolve a data do próximo (ou null); erro = já avisado
-async function ccSalvar(st, { fuId, leadId }) {
+function ccValida(st) {
   if (!ccPronto(st)) return false;
   const d = st.prox ? st.q.data : null;
   if (st.prox && !d) { alert('Escolha o dia do próximo follow-up (ou toque em "não marcar").'); return false; }
   if (d && d < new Date(Date.now() - 5 * 60000)) { alert('O horário do próximo follow-up já passou. Escolha outro.'); return false; }
+  return true;
+}
+async function ccSalvar(st, { fuId, leadId }) {
+  if (!ccValida(st)) return false;
+  const d = st.prox ? st.q.data : null;
   const corpo = { resultado: st.res, relato: st.relato.trim() }, nota = st.nota.trim() || FU_REGRAS[st.etapa]?.[1] || 'Entrar em contato';
   if (st.tipo === 'visita') {
     await enviar('visita_feita', { id: leadId, ...corpo });
