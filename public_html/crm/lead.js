@@ -4,6 +4,7 @@ let atual = null;       // dados do lead aberto (lead, followups, historico)
 let aba = 'resumo';
 let mudou = false;      // se algo mudou, a página recarrega ao fechar a ficha
 let modelo = 0;         // qual sugestão de mensagem mostrar
+// (o estado do "Acompanhamento" — agendar, concluir, registrar — fica em flModo, flAg, flConc e flReg, mais abaixo)
 
 // Muda a etapa (o servidor registra "Novo → Respondeu" no histórico)
 // Virou venda: pergunta o valor e o corretor (é daqui que sai "quanto cada corretor vendeu" no hub).
@@ -63,9 +64,9 @@ async function abrirLead(id) {
   }
   const novo = String(atual?.lead.id) !== String(id);
   atual = decorar(r);
-  if (novo) { aba = 'resumo'; modelo = 0; }
+  if (novo) { aba = 'resumo'; modelo = 0; flZerar(); flTopo = true; }
   desenhar();
-  if (!ficha.open) ficha.showModal();
+  if (!ficha.open) { ficha.showModal(); rolarFicha(); }
 }
 // Rótulos de data prontos para a ficha ("22 de out, 14:30", "Amanhã, 10:00")
 function decorar(r) {
@@ -222,130 +223,324 @@ async function cliqueQuali(e) {
   quali.querySelector('.q-corpo').scrollTop = rolagem;
 }
 
+// ---------- Escolher dia e hora (agenda da ficha e próximo contato ao concluir um follow-up) ----------
+// Os 7 próximos dias em botões ("Outra" abre a folha de datas do ios.js) e os horários por turno ("Outro" também abre a folha)
+const TURNOS = [['Manhã', [9, 10, 11]], ['Tarde', [14, 15, 16, 17]], ['Noite', [18, 19]]];
+const SEMANA_CURTA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const horaCurta = d => d.getHours() + 'h' + (d.getMinutes() ? p2(d.getMinutes()) : '');
+// "Hoje, 10h" · "Amanhã, 14h" · "Qua 19/11, 9h30"
+function rotuloQuando(d) {
+  if (!d) return '';
+  const dia = diaLocal(d);
+  return (dia === diaLocal(new Date()) ? 'Hoje' : dia === diaLocal(meiaNoite(1)) ? 'Amanhã' : SEMANA_CURTA[d.getDay()] + ' ' + dm(d)) + ', ' + horaCurta(d);
+}
+// q = { data: Date ou null }; marcados = dias (aaaa-mm-dd) que já têm algo marcado, ganham um pontinho
+function quandoHtml(q, marcados = new Set()) {
+  const d = q.data, dias = Array.from({ length: 7 }, (_, i) => meiaNoite(i));
+  const naSemana = d && dias.some(x => diaLocal(x) === diaLocal(d));
+  const horaOn = h => !!d && d.getHours() === h && d.getMinutes() === 0;
+  const outraHora = !!d && !TURNOS.some(([, hs]) => hs.some(horaOn));
+  return `<div class="qd-dias" role="group" aria-label="Dia">${dias.map((x, i) => {
+    const on = !!d && diaLocal(x) === diaLocal(d);
+    return `<button type="button" class="qd-dia${on ? ' on' : ''}" data-qd-dia="${i}" aria-pressed="${on}" aria-label="${i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : SEMANA_CURTA[x.getDay()]}, ${x.getDate()} de ${MESES[x.getMonth()]}"><small>${i === 0 ? 'Hoje' : SEMANA_CURTA[x.getDay()]}</small><b>${x.getDate()}</b>${marcados.has(diaLocal(x)) ? '<i class="qd-pto"></i>' : ''}</button>`;
+  }).join('')}<button type="button" class="qd-dia qd-outra${d && !naSemana ? ' on' : ''}" data-qd-outra aria-label="Escolher outra data">${d && !naSemana ? `<small>${SEMANA_CURTA[d.getDay()]}</small><b>${d.getDate()}/${d.getMonth() + 1}</b>` : `${ico('calendario')}<small>Outra</small>`}</button></div>
+  <div class="qd-horas" role="group" aria-label="Horário">${TURNOS.map(([t, hs]) => `<div class="qd-turno"><span>${t}</span><div>${hs.map(h => `<button type="button" class="qd-hora${horaOn(h) ? ' on' : ''}" data-qd-hora="${h}" aria-pressed="${horaOn(h)}">${h}h</button>`).join('')}</div></div>`).join('')}
+    <button type="button" class="qd-hora qd-outro${outraHora ? ' on' : ''}" data-qd-outra>${outraHora ? horaCurta(d) : 'Outro'}</button></div>`;
+}
+// Clique dentro do seletor: muda q.data e chama aoMudar; devolve false se o clique não era dele
+let campoQuando = null;
+function quandoClique(e, q, aoMudar) {
+  const b = e.target.closest('[data-qd-dia], [data-qd-hora], [data-qd-outra]');
+  if (!b) return false;
+  if (b.dataset.qdDia !== undefined) {
+    const x = meiaNoite(+b.dataset.qdDia);
+    x.setHours(q.data ? q.data.getHours() : 10, q.data ? q.data.getMinutes() : 0, 0, 0);
+    q.data = x;
+  } else if (b.dataset.qdHora !== undefined) {
+    const x = q.data ? new Date(q.data) : meiaNoite(1);
+    x.setHours(+b.dataset.qdHora, 0, 0, 0);
+    q.data = x;
+  } else if (typeof abrirSeletor === 'function') {
+    // "Outra data" / "Outro horário": a folha de dias e horários do ios.js, num campo escondido
+    if (!campoQuando) { campoQuando = document.createElement('input'); campoQuando.type = 'hidden'; document.body.append(campoQuando); }
+    campoQuando.value = q.data ? paraInput(q.data) : '';
+    campoQuando.onchange = () => { const x = doInput(campoQuando.value); if (x) { q.data = x; aoMudar(); } };
+    abrirSeletor(campoQuando);
+    return true;
+  }
+  if (typeof toqueVibrar === 'function') toqueVibrar();
+  aoMudar();
+  return true;
+}
+
+// ---------- Como foi (concluir um follow-up ou uma visita) ----------
+const RES_FU = ['Atendeu', 'Não atendeu', 'Respondeu no WhatsApp', 'Pediu para remarcar'];
+const RES_VISITA = ['Visitou e gostou', 'Visitou, não gostou', 'Não compareceu', 'Remarcou'];
+const classeRes = r => ['Atendeu', 'Respondeu no WhatsApp', 'Visitou e gostou'].includes(r) ? ' bom' : ['Não atendeu', 'Não compareceu', 'Visitou, não gostou'].includes(r) ? ' ruim' : '';
+// "Hoje, 14:20" · "Ontem, 9:05" · "12 de nov, 10:45"
+function quandoFeito(d) {
+  const dia = diaLocal(d);
+  return (dia === diaLocal(new Date()) ? 'Hoje' : dia === diaLocal(meiaNoite(-1)) ? 'Ontem' : dataCurta(d)) + ', ' + hm(d);
+}
+// Uma linha de "Feito" (ficha e histórico): quando, tipo, como foi, quem; a tarefa agendada e o que foi feito
+const linhaFeito = r => `<li class="fl-r${r.marco ? ' marco' : ''}">
+    <div class="fl-r1"><b>${quandoFeito(r.quando)}</b><span class="fl-r-tipo">${esc(r.tipo)}</span>${r.resultado ? `<span class="fl-r-res${classeRes(r.resultado)}">${esc(r.resultado)}</span>` : ''}${r.autor ? `<small>por ${esc(r.autor)}</small>` : ''}</div>
+    ${r.tarefa ? `<p class="fl-r-tarefa">Tarefa: ${esc(r.tarefa)}</p>` : ''}${r.texto ? `<p>${esc(r.texto)}</p>` : ''}
+  </li>`;
+
 // ---------- Desenho da ficha ----------
+const svgL = (d, cls = 'ico') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const IC_L = {
+  check: '<path d="M20 6 9 17l-5-5"/>', x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  casa: '<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/>',
+  fone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/>',
+  enviar: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>', brilho: '<path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2Z"/>',
+  pino: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  baixo: '<path d="m6 9 6 6 6-6"/>', lapis: '<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>'
+};
+const COR_PRIO = { alta: '#F59E0B', baixa: '#9C9A92' }, COR_TEMP = { quente: '#FF6369', morno: '#F59E0B', frio: '#60A5FA' };
+const TIPO_REG = { ligacao: 'Ligação', whatsapp: 'WhatsApp', visita: 'Visita', nota: 'Anotação' };
+const PH_REG = {
+  ligacao: 'Como foi a ligação? (ex.: atendeu, quer ver opções de 3 quartos)', whatsapp: 'O que foi conversado no WhatsApp fora do CRM?',
+  visita: 'Como foi a visita? O que o cliente achou?', nota: 'Escreva uma anotação…'
+};
+// O que perguntar na qualificação (conta "6 de 9" e mostra o que falta)
+const CHAVES_QUALI = [['Finalidade', f => f.finalidade], ['Tipo de imóvel', f => (f.tipos || []).length], ['Orçamento', f => f.orc_de || f.orc_ate || f.orc_texto],
+  ['Onde', f => f.cidade || (f.bairros || []).length], ['Pagamento', f => (f.pagamento || []).length], ['Entrada', f => f.entrada || f.sem_entrada],
+  ['Prazo', f => f.prazo], ['Quem decide', f => f.decide], ['Imóvel atual', f => f.imovel_atual]];
+
+// O que fica entre um desenho e outro da ficha (zera ao abrir outro lead)
+let flModo = 'agendar', flAg = null, flConc = null, flReg = null, flMenu = false, flTopo = false;
+// Agendar começa no dia sugerido pela etapa (ex.: "Respondeu" → hoje, na próxima hora; depois das 19h vai para amanhã)
+function novoAg() {
+  const regra = FU_REGRAS[atual?.lead.etapa];
+  let d = regra ? daqui(regra[0], 10) : daqui(1, 10);
+  if (regra && regra[0] === 0) { d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0); if (d.getHours() > 19 || d.getHours() < 8) d = daqui(1, 10); }
+  return { tipo: 'fu', q: { data: d }, nota: '', remarcando: null };
+}
+function flZerar() {
+  flModo = 'agendar'; flAg = novoAg();
+  flConc = null; flReg = { tipo: 'ligacao', texto: '' }; flMenu = false;
+}
+
+// Agendados: follow-ups em aberto e a visita marcada, por data
+function agendados() {
+  const l = atual.lead, hoje0 = meiaNoite(0);
+  const itens = atual.followups.filter(f => !f.feito_em).map(f => ({ chave: 'fu:' + f.id, id: f.id, tipo: 'fu', quando: new Date(f.quando), texto: f.nota || 'Entrar em contato', canal: f.canal }));
+  if (l.visita_em) itens.push({ chave: 'visita', tipo: 'visita', quando: new Date(l.visita_em), texto: 'Visita' + (l.empreendimento ? ' · ' + l.empreendimento : '') });
+  return itens.sort((a, b) => a.quando - b.quando).map(it => ({ ...it, atrasado: it.quando < hoje0 }));
+}
+// Feito: follow-ups concluídos e o que foi registrado à mão (ligação, WhatsApp, visita, anotação)
+function feitos() {
+  const fus = atual.followups.filter(f => f.feito_em).map(f => ({ quando: new Date(f.feito_em), tipo: 'Follow-up', resultado: f.resultado, autor: f.feito_por,
+    tarefa: f.relato ? f.nota : '', texto: f.relato || f.nota || 'Follow-up feito' }));
+  const hs = atual.historico.filter(h => TIPO_REG[h.tipo]).map(h => ({ quando: new Date(h.criado_em), tipo: TIPO_REG[h.tipo], resultado: h.resultado, autor: h.autor, texto: h.texto }));
+  return [...fus, ...hs].sort((a, b) => b.quando - a.quando);
+}
+
 function desenhar() {
+  if (!flAg) flAg = novoAg(); // depois de agendar, a sugestão segue a etapa nova
   const l = atual.lead;
   const ficha = lerFicha(l);
-  const pend = atual.followups.filter(f => !f.feito_em);
   const msgs = atual.historico.filter(h => h.tipo === 'msg').reverse();
   const posCaminho = CAMINHO.indexOf(l.etapa);
   const fechado = GANHOS.includes(l.etapa) ? 'ganho' : (PERDIDOS.includes(l.etapa) ? 'perdido' : '');
+  const podeEnviar = !!l.wa && !l.nao_contatar;
+  // redesenhar não pode jogar a pessoa para o topo (só ao abrir outro lead)
+  const y = flTopo ? [0, 0] : [fichaC.querySelector('.fl-esq')?.scrollTop || 0, fichaC.querySelector('.fl-corpo')?.scrollTop || 0];
+  flTopo = false;
+  const pill = (rotulo, campo, html, corDot) => `<label class="fl-pill"><span>${rotulo}</span>${corDot ? `<i style="background:${corDot}"></i>` : ''}<select data-campo="${campo}">${html}</select>${svgL(IC_L.baixo, 'ico fl-pill-seta')}</label>`;
 
   fichaC.innerHTML = `
   <header class="fl-cab">
-    <div class="fl-id">
-      <div class="fl-nome"><h2>${esc(l.nome || 'Sem nome')}</h2>
-        <button class="fl-valor" data-acao="valor">${l.valor ? dinheiro(l.valor) : 'Adicionar valor'} ✎</button>
-        ${fechado ? `<span class="chip ${fechado}">${fechado === 'ganho' ? '✓ Ganho' : '✕ ' + esc(nomeEtapa(l.etapa))}</span>` : ''}</div>
-      <div class="fl-meta">
-        <button class="lnk-sutil" data-acao="editar">${esc(l.telefone || 'sem telefone')} ✎</button>
-        <span>·</span><span>${esc(l.origem || 'Sem origem')}</span>
-        <label>Responsável <select data-campo="responsavel">${opcoes(listaResponsaveis(), l.responsavel, 'Ninguém')}</select></label>
-        <label>Prioridade <select data-campo="prioridade">${opcoes(PRIORIDADES, l.prioridade || 'normal')}</select></label>
-        <label>Temperatura <select data-campo="temperatura">${opcoes(TEMPERATURAS, l.temperatura, '—')}</select></label>
+    <div class="fl-topo">
+      <span class="fl-av" aria-hidden="true">${esc((iniciais(l.nome) || '?').toUpperCase())}</span>
+      <div class="fl-id">
+        <div class="fl-l1">
+          <div class="fl-nome"><h2>${esc(l.nome || 'Sem nome')}</h2>
+            <button class="fl-valor" data-acao="valor">${l.valor ? dinheiro(l.valor) : 'Adicionar valor'} ${svgL(IC_L.lapis, 'ico fl-lapis')}</button>
+            ${fechado ? `<span class="fl-fechado ${fechado}">${fechado === 'ganho' ? '✓ Ganho' : '✕ ' + esc(nomeEtapa(l.etapa))}</span>` : ''}</div>
+          <div class="fl-botoes">
+            <button class="fl-b" data-acao="editar">Editar</button>
+            <div class="fl-mais">
+              <button class="fl-ib" data-acao="mais" aria-label="Mais ações" aria-expanded="${flMenu}">${ico('mais')}</button>
+              <div class="fl-menu"${flMenu ? '' : ' hidden'}>
+                <button data-acao="naolead">Não é lead</button>
+                <button class="perigo" data-acao="remover">Remover lead</button>
+              </div>
+            </div>
+            <button class="fl-ib" data-acao="fechar" aria-label="Fechar" autofocus>${svgL(IC_L.x)}</button>
+          </div>
+        </div>
+        <div class="fl-l2">
+          <div class="fl-meta"><button class="fl-tel" data-acao="editar" title="Editar telefone">${esc(l.telefone || 'sem telefone')}</button><span>·</span><span>${esc(l.origem || 'Sem origem')}</span><span>·</span><span>entrou há ${tempoDesde(new Date(l.criado_em))}</span></div>
+          <div class="fl-props">
+            ${pill('Responsável', 'responsavel', opcoes(listaResponsaveis(), l.responsavel, 'Ninguém'))}
+            ${pill('Prioridade', 'prioridade', opcoes(PRIORIDADES, l.prioridade || 'normal'), COR_PRIO[l.prioridade])}
+            ${pill('Temperatura', 'temperatura', opcoes(TEMPERATURAS, l.temperatura, '—'), COR_TEMP[l.temperatura])}
+            <label class="fl-nao"><input type="checkbox" data-campo="nao_contatar" ${l.nao_contatar ? 'checked' : ''}>Não contatar</label>
+          </div>
+        </div>
       </div>
-      <label class="fl-nao"><input type="checkbox" data-campo="nao_contatar" ${l.nao_contatar ? 'checked' : ''}> ⊘ Não contatar</label>
     </div>
-    <div class="fl-botoes">
-      <button class="b-ganho" data-acao="ganho">✓ Ganho</button>
-      <button class="b-perdido" data-acao="perdido">✕ Perdido</button>
-      <button class="b-neutro" data-acao="naolead">Não é lead</button>
-      <button class="b-neutro" data-acao="editar">Editar</button>
-      <button class="b-fechar" data-acao="fechar" aria-label="Fechar" autofocus>×</button>
+    <div class="fl-etapas">
+      <div class="fl-caminho" role="group" aria-label="Etapa do lead">${CAMINHO.map((k, i) => `<button type="button" class="fl-passo${i < posCaminho ? ' feito' : ''}${k === l.etapa ? ' atual' : ''}" data-etapa="${k}" title="Mover para ${esc(nomeEtapa(k))}">${i < posCaminho ? svgL(IC_L.check, 'ico ico-s') : ''}<span>${esc(nomeEtapa(k))}</span></button>`).join('')}</div>
+      <span class="fl-div" aria-hidden="true"></span>
+      <button class="fl-fim ganho" data-acao="ganho">${svgL(IC_L.check, 'ico ico-s')}Ganho</button>
+      <button class="fl-fim perdido" data-acao="perdido">${svgL(IC_L.x, 'ico ico-s')}Perdido</button>
     </div>
+    ${posCaminho < 0 && !fechado ? `<p class="fl-fora">Etapa atual: <b>${esc(nomeEtapa(l.etapa))}</b></p>` : ''}
   </header>
   <div class="fl-corpo">
     <div class="fl-esq">
-      <ol class="fl-caminho">${CAMINHO.map((k, i) => `<li class="${i <= posCaminho ? 'feito' : ''} ${k === l.etapa ? 'atual' : ''}" data-etapa="${k}" title="Mover para ${esc(nomeEtapa(k))}"><i></i><span>${esc(nomeEtapa(k))}</span></li>`).join('')}</ol>
-      ${posCaminho < 0 && !fechado ? `<p class="fl-fora">Etapa atual: <b>${esc(nomeEtapa(l.etapa))}</b></p>` : ''}
-      <nav class="fl-abas">${[['resumo', 'Resumo'], ['imoveis', 'Imóveis'], ['caminho', 'Caminho'], ['historico', 'Histórico']]
+      <nav class="fl-abas" aria-label="Seções da ficha">${[['resumo', 'Resumo'], ['quali', 'Qualificação'], ['historico', 'Histórico']]
         .map(([k, t]) => `<button data-aba="${k}" class="${aba === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
-      <div class="fl-aba">${({ resumo, imoveis, caminho, historico })[aba](l, ficha, pend)}</div>
+      <div class="fl-aba">${({ resumo, quali: qualificacao, historico })[aba](l, ficha)}</div>
     </div>
-    <aside class="fl-dir">
-      <div class="fl-dir-topo"><b>CONVERSA</b><small>${esc(l.telefone || '')}</small></div>
-      <div class="fl-conversa">${msgs.length ? msgs.map(m => `<div class="bolha"><p>${esc(m.texto)}</p><small>${m.quando} · enviada pelo WhatsApp</small></div>`).join('')
+    <aside class="fl-dir" aria-label="Conversa">
+      <div class="fl-conv-topo">
+        <span class="fl-wa">${ico('whats')}</span>
+        <div><b>Conversa no WhatsApp</b><small>${esc(l.telefone || 'sem telefone')}</small></div>
+        ${podeEnviar ? `<a class="mini" href="${esc(l.wa)}" target="_blank" rel="noopener">Abrir ${svgL('<path d="M7 17 17 7"/><path d="M8 7h9v9"/>', 'ico ico-s')}</a>` : ''}
+      </div>
+      ${l.nao_contatar ? '<p class="fl-espera">Marcado como "não contatar": o envio está desligado.</p>'
+        : l.etapa === 'respondeu' ? '<p class="fl-espera"><i></i>Respondeu e está esperando a sua resposta.</p>' : ''}
+      <div class="fl-conversa">${msgs.length ? msgs.map(m => `<div class="bolha"><p>${esc(m.texto)}</p><small>${m.quando}${m.autor ? ' · ' + esc(m.autor) : ''} · enviada pelo WhatsApp</small></div>`).join('')
         : '<p class="vazio-c">Nenhuma mensagem ainda. Escreva a primeira abaixo — o CRM abre o seu WhatsApp com o texto pronto.</p>'}</div>
-      <button class="sugerir" data-acao="sugerir">✦ Sugerir resposta</button>
+      ${podeEnviar ? `<div class="fl-sug">
+        <div class="fl-sug-t">${svgL(IC_L.brilho, 'ico ico-s')}<b>Sugestão de resposta</b></div>
+        <p id="fl-sug-txt">${esc(sugestao())}</p>
+        <div class="fl-sug-b"><button class="mini ok" data-acao="usar-sug">Usar</button>${(MODELOS[l.etapa] || MODELOS.novo).length > 1 ? '<button class="mini" data-acao="outra-sug">Outra</button>' : ''}</div>
+      </div>` : ''}
       <div class="fl-msg">
-        <textarea id="fl-texto" rows="2" placeholder="Escreva a mensagem... (Enter envia, Shift+Enter quebra linha)" ${l.wa && !l.nao_contatar ? '' : 'disabled'}></textarea>
-        <button class="btn" data-acao="enviar" ${l.wa && !l.nao_contatar ? '' : 'disabled'}>Enviar</button>
+        <textarea id="fl-texto" rows="1" aria-label="Mensagem" placeholder="Escreva a mensagem… (Enter envia)" ${podeEnviar ? '' : 'disabled'}></textarea>
+        <button class="fl-enviar" data-acao="enviar" aria-label="Enviar pelo WhatsApp" ${podeEnviar ? '' : 'disabled'}>${svgL(IC_L.enviar)}</button>
       </div>
     </aside>
   </div>`;
+  fichaC.querySelector('.fl-esq').scrollTop = y[0];
+  fichaC.querySelector('.fl-corpo').scrollTop = y[1];
+  rolarFicha();
+}
+// a conversa mostra a última mensagem; no celular as etapas rolam de lado e a atual fica à vista
+// (chamado também depois de abrir a janela: fechada, ela ainda não tem tamanho)
+function rolarFicha() {
+  const conv = fichaC.querySelector('.fl-conversa'); if (conv) conv.scrollTop = conv.scrollHeight;
+  const cam = fichaC.querySelector('.fl-caminho'), at = cam?.querySelector('.atual');
+  if (at && cam.scrollWidth > cam.clientWidth) cam.scrollLeft = at.offsetLeft - cam.offsetLeft - (cam.clientWidth - at.offsetWidth) / 2;
 }
 
-function resumo(l, ficha, pend) {
-  const linhas = resumoFicha(ficha);
+function resumo(l) {
+  const itens = agendados(), regra = FU_REGRAS[l.etapa], fs = feitos(), nFu = fs.filter(r => r.tipo === 'Follow-up').length;
   return `
-  <section class="fl-sec fl-visita">
-    <div class="fl-linha">${ico('calendario')}
-      <b>Visita</b> <span class="${l.visita_em ? 'ok' : 'cinza'}">${l.visita_em ? esc(l.visita_rotulo) : 'nenhuma marcada'}</span>
-      <button class="mini" data-acao="visita">${l.visita_em ? 'Remarcar' : 'Marcar visita'}</button>
-      ${l.visita_em ? '<button class="mini" data-acao="desmarcar">Desmarcar</button>' : ''}</div>
-    <div class="fl-visita-form" hidden><input type="datetime-local" id="fl-visita" value="${paraInput(l.visita_em ? new Date(l.visita_em) : daqui(1, 10))}"><button class="btn" data-acao="salvar-visita">Salvar visita</button></div>
+  <section class="fl-obs">
+    <div class="fl-obs-cab"><span>${svgL(IC_L.pino, 'ico ico-s')}Observações do lead</span><small id="fl-obs-st">fica fixo aqui · salva ao sair do campo</small></div>
+    <textarea id="fl-obs" rows="2" aria-label="Observações do lead" placeholder="O que todo mundo precisa saber sobre este lead (ex.: só atende depois das 18h)">${esc(l.notas || '')}</textarea>
+  </section>
+  <section class="fl-sec fl-acomp">
+    <div class="fl-sec-cab"><h4>Acompanhamento</h4>${regra ? `<span class="fl-dica-etapa">${svgL(IC_L.brilho, 'ico ico-s')}${esc(nomeEtapa(l.etapa))}: ${esc(regra[1].charAt(0).toLowerCase() + regra[1].slice(1))}</span>` : ''}</div>
+    ${itens.length ? `<div class="fl-bloco"><span class="fl-rot">Agendado</span>${itens.map((it, i) => itemAgendado(it, i)).join('')}</div>`
+      : '<div class="fl-sem"><i></i><div><b>Sem próximo passo.</b> Lead sem data marcada esfria — agende abaixo.</div></div>'}
+    <div class="fl-sep"></div>
+    <nav class="fl-modo" aria-label="O que fazer">
+      <button data-modo="agendar" class="${flModo === 'agendar' ? 'on' : ''}">${ico('calendario')}Agendar próximo passo</button>
+      <button data-modo="registrar" class="${flModo === 'registrar' ? 'on' : ''}">${svgL(IC_L.lapis)}Registrar o que foi feito</button>
+    </nav>
+    ${flModo === 'agendar' ? agendarHtml(itens) : registrarHtml()}
+    <div class="fl-sep"></div>
+    <div class="fl-bloco">
+      <div class="fl-sec-cab"><span class="fl-rot">Feito${nFu ? ' · ' + plural(nFu, 'follow-up', 'follow-ups') : ''}</span>${fs.length > 4 ? '<button class="lnk" data-aba="historico">Ver tudo no histórico</button>' : ''}</div>
+      ${fs.length ? `<ol class="fl-reg">${fs.slice(0, 4).map(linhaFeito).join('')}</ol>` : '<p class="cinza">Nada feito ainda. Ao concluir um follow-up, o que foi feito aparece aqui.</p>'}
+    </div>
   </section>
   <section class="fl-sec">
-    <h4>Próximo contato</h4>
-    ${pend.length ? pend.map(f => `<div class="fl-fu ${f.atrasado ? 'atrasado' : ''}"><b>${esc(f.rotulo)}</b><span>${esc(f.nota || f.canal)}</span><button class="mini" data-acao="fu-feito" data-fu="${f.id}">Feito</button></div>`).join('')
-      : '<p class="cinza">Nenhum follow-up agendado.</p>'}
-    <div class="fl-agendar"><input id="fl-fu-nota" placeholder="O que fazer (ex.: ligar para confirmar)"><input type="datetime-local" id="fl-fu-quando" title="Quando?"><button class="btn" data-acao="agendar">Agendar</button></div>
-    <div class="atalhos"><span>Para:</span><button type="button" data-dias="1">Amanhã</button><button type="button" data-dias="3">Em 3 dias</button><button type="button" data-dias="7">Em 7 dias</button></div>
-  </section>
-  <section class="fl-sec">
-    <h4>Ficha de qualificação <button class="mini" data-acao="ficha">${linhas.length ? 'Editar' : 'Preencher'}</button></h4>
-    ${linhas.length
-      ? `<dl class="fl-dados">${linhas.map(([t, v]) => `<div><dt>${t}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`
-      : '<button type="button" class="fl-dica" data-acao="ficha"><b>O que o cliente procura?</b><p>Comece pela finalidade (morar, investir ou alugar): a ficha segue o roteiro de cada um, com tipo, orçamento e região.</p></button>'}
-  </section>
-  <section class="fl-sec">
-    <h4>Observações <button class="mini" data-acao="notas">Editar</button></h4>
-    <div class="fl-notas">${l.notas ? esc(l.notas) : '<span class="cinza">Sem observações.</span>'}</div>
-    <div class="fl-notas-form" hidden><textarea id="fl-notas" rows="5">${esc(l.notas || '')}</textarea><button class="btn" data-acao="salvar-notas">Salvar</button></div>
-  </section>
-  <section class="fl-sec">
-    <h4>Dados do lead</h4>
-    <dl class="fl-dados">
-      <div><dt>Campanha</dt><dd>${esc(l.campanha || '—')}</dd></div>
-      <div><dt>Conjunto</dt><dd>${esc(l.conjunto || '—')}</dd></div>
-      <div><dt>Criativo</dt><dd>${esc(l.criativo || '—')}</dd></div>
-      <div><dt>Entrou em</dt><dd>${esc(l.entrou)}</dd></div>
-      <div><dt>Origem</dt><dd><select data-campo="origem">${opcoes([...new Set([...ORIGENS, ...(l.origem ? [l.origem] : [])])], l.origem, 'Sem origem')}</select></dd></div>
-    </dl>
-    <div class="fl-rodape"><button class="lnk perigo" data-acao="remover">Remover lead</button></div>
+    <div class="fl-sec-cab"><h4>De onde veio</h4><small class="cinza">entrou em ${esc(l.entrou)}</small></div>
+    <div class="fl-origem">
+      <label class="fl-o-chip">${ico(ICO_ORIGEM[l.origem] || 'anuncio')}<select data-campo="origem" aria-label="Origem">${opcoes([...new Set([...ORIGENS, ...(l.origem ? [l.origem] : [])])], l.origem, 'Sem origem')}</select></label>
+      ${[l.campanha, l.conjunto, l.criativo].filter(Boolean).map(t => `<span class="fl-o-sep">›</span><span>${esc(t)}</span>`).join('') || '<span class="cinza">sem campanha registrada</span>'}
+    </div>
   </section>`;
 }
 
-function imoveis(l, ficha) {
+// Uma linha de "Agendado" e, se for a que está sendo concluída, o "Como foi?"
+function itemAgendado(it, i) {
+  const abrindo = flConc && flConc.chave === it.chave, ops = it.tipo === 'visita' ? RES_VISITA : RES_FU;
+  const rot = it.atrasado ? 'Atrasado · ' + dm(it.quando) + ' ' + hm(it.quando) : fuQuando(it.quando);
+  return `<div class="fl-item${i === 0 ? ' primeiro' : ''}${it.atrasado ? ' atrasado' : ''}">
+      <span class="fl-roda">${it.tipo === 'visita' ? svgL(IC_L.casa) : ico('relogio')}</span>
+      <div class="fl-item-tx"><div><b>${esc(rot)}</b><small>${it.tipo === 'visita' ? 'Visita' : 'Follow-up' + (it.canal ? ' · ' + esc(it.canal) : '')}</small></div><p>${esc(it.texto)}</p></div>
+      ${abrindo ? '' : `<button class="mini" data-acao="remarcar" data-item="${it.chave}">Remarcar</button>
+      <button class="mini ok" data-acao="concluir" data-item="${it.chave}">${svgL(IC_L.check, 'ico ico-s')}Feito</button>`}
+    </div>
+    ${abrindo ? `<div class="fl-feito" data-item="${it.chave}">
+      <b>Como foi?</b>
+      <div class="fl-res">${ops.map(o => `<button type="button" class="fl-res-b${flConc.res === o ? ' on' : ''}" data-res="${esc(o)}" aria-pressed="${flConc.res === o}">${esc(o)}</button>`).join('')}</div>
+      <textarea id="fl-relato" rows="2" aria-label="O que foi feito" placeholder="O que foi feito? Ex.: mandei as 3 opções, gostou da 2ª e quer visitar sábado.">${esc(flConc.relato)}</textarea>
+      <div class="fl-feito-pe"><span id="fl-feito-aviso">${avisoConc()}</span><button class="mini" data-acao="cancelar-feito">Cancelar</button><button class="mini ok" data-acao="salvar-feito" ${flConc.res && flConc.relato.trim() ? '' : 'disabled'}>Salvar no registro</button></div>
+    </div>` : ''}`;
+}
+const avisoConc = () => !flConc.res ? 'Escolha como foi.' : !flConc.relato.trim() ? 'Escreva o que foi feito.' : 'Fica em Feito, com a data e a hora de agora.';
+
+function agendarHtml(itens) {
+  const a = flAg, visita = a.tipo === 'visita', d = a.q.data;
+  const marcados = new Set(itens.map(it => diaLocal(it.quando)));
+  const rem = a.remarcando, remTxt = rem ? (rem.tipo === 'visita' ? 'a visita' : `"${rem.texto}"`) : '';
+  const verbo = rem ? 'Remarcar' : visita ? (atual.lead.visita_em ? 'Remarcar visita' : 'Marcar visita') : 'Agendar';
+  return `<div class="ag">
+    ${rem ? `<p class="ag-rem">Remarcando ${esc(remTxt)} <button class="lnk" data-acao="cancelar-remarcar">cancelar</button></p>` : `<div class="ag-tipos">
+      <button type="button" class="ag-tipo${visita ? '' : ' on'}" data-ag-tipo="fu" aria-pressed="${!visita}"><span class="ag-ic">${ico('relogio')}</span><span><b>Follow-up</b><small>Lembrete para retomar o contato</small></span></button>
+      <button type="button" class="ag-tipo${visita ? ' on' : ''}" data-ag-tipo="visita" aria-pressed="${visita}"><span class="ag-ic">${svgL(IC_L.casa)}</span><span><b>Visita</b><small>Encontro com o cliente no imóvel</small></span></button>
+    </div>`}
+    <div class="ag-quando">${quandoHtml(a.q, marcados)}</div>
+    <div class="ag-pe">
+      ${visita ? '<p class="cinza ag-vis-dica">A visita aparece no quadro e o lead vai para "Visita agendada".</p>'
+        : `<input id="ag-nota" aria-label="O que fazer" placeholder="O que fazer? (ex.: ${esc(FU_REGRAS[atual.lead.etapa]?.[1].toLowerCase() || 'ligar para confirmar')})" value="${esc(a.nota)}">`}
+      <button class="btn" data-acao="agendar" ${d ? '' : 'disabled'}>${verbo}${d ? ' · ' + esc(rotuloQuando(d)) : ''}</button>
+    </div>
+  </div>`;
+}
+
+function registrarHtml() {
+  const r = flReg;
+  const b = (k, icone) => `<button type="button" class="ag-chip${r.tipo === k ? ' on' : ''}" data-reg-tipo="${k}" aria-pressed="${r.tipo === k}">${icone}${TIPO_REG[k]}</button>`;
+  return `<div class="ag">
+    <div class="ag-chips">${b('ligacao', svgL(IC_L.fone, 'ico ico-s'))}${b('whatsapp', ico('whats'))}${b('visita', svgL(IC_L.casa, 'ico ico-s'))}${b('nota', svgL(IC_L.lapis, 'ico ico-s'))}</div>
+    <textarea id="reg-texto" rows="3" aria-label="O que aconteceu" placeholder="${esc(PH_REG[r.tipo])}">${esc(r.texto)}</textarea>
+    <div class="ag-pe"><p class="cinza">Fica em Feito com a data e a hora de agora.</p><button class="btn" data-acao="registrar">Registrar</button></div>
+  </div>`;
+}
+
+function qualificacao(l, ficha) {
   const linhas = resumoFicha(ficha);
   const com = (lista, v) => v && !lista.includes(v) ? [...lista, v] : lista; // não perde um valor que não está na lista
-  return `<section class="fl-sec"><h4>O que procura</h4>
+  const feitas = CHAVES_QUALI.filter(([, ok]) => ok(ficha)), faltam = CHAVES_QUALI.filter(([, ok]) => !ok(ficha)).map(([t]) => t);
+  return `<section class="fl-sec">
+    <div class="fl-sec-cab"><h4>Interesse</h4></div>
     <div class="fl-grade">
       <label>Empreendimento<select data-campo="empreendimento">${opcoes(com(listaEmps(), l.empreendimento), l.empreendimento, '—')}</select></label>
       <label>Tipologia<select data-campo="tipologia">${opcoes(com(['Studio', 'Apartamento', 'Casa', 'Lote', 'Sala comercial'], l.tipologia), l.tipologia, '—')}</select></label>
       <label>Objetivo<select data-campo="objetivo">${opcoes(com(['Investimento', 'Moradia'], l.objetivo), l.objetivo, '—')}</select></label>
     </div>
-    ${linhas.length ? `<dl class="fl-dados">${linhas.filter(([t]) => ['Tipo', 'Orçamento', 'Quartos', 'Vagas', 'Área mínima', 'Onde', 'Faz questão de'].includes(t)).map(([t, v]) => `<div><dt>${t}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
-    <button type="button" class="mini" data-acao="ficha">${linhas.length ? 'Editar ficha de qualificação' : 'Preencher ficha de qualificação'}</button>
+  </section>
+  <section class="fl-sec">
+    <div class="fl-sec-cab"><h4>Ficha de qualificação</h4>
+      <div class="fl-prog-w"><span class="fl-prog" aria-hidden="true"><i style="width:${Math.round(feitas.length * 100 / CHAVES_QUALI.length)}%"></i></span><small>${feitas.length} de ${CHAVES_QUALI.length}</small><button class="mini" data-acao="ficha">${linhas.length ? 'Editar ficha' : 'Preencher'}</button></div></div>
+    ${linhas.length
+      ? `<dl class="fl-dados">${linhas.map(([t, v]) => `<div><dt>${t}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`
+      : '<button type="button" class="fl-dica" data-acao="ficha"><b>O que o cliente procura?</b><p>Comece pela finalidade (morar, investir ou alugar): a ficha segue o roteiro de cada um, com tipo, orçamento e região.</p></button>'}
+    ${faltam.length && linhas.length ? `<div class="fl-falta"><span>Falta perguntar:</span>${faltam.map(t => `<button type="button" class="fl-tag" data-acao="ficha">${t}</button>`).join('')}</div>` : ''}
   </section>`;
 }
 
-function caminho(l) {
-  const etapas = atual.historico.filter(h => h.tipo === 'etapa').reverse();
-  return `<section class="fl-sec"><h4>Caminho até aqui</h4><ul class="linha-tempo">
-    <li><b>Entrou</b><small>${esc(l.entrou)} · ${esc(l.origem || 'sem origem')}</small></li>
-    ${etapas.map(h => `<li><b>${esc(h.texto)}</b><small>${h.quando}</small></li>`).join('')}
-    <li class="agora"><b>Agora em ${esc(nomeEtapa(l.etapa))}</b></li></ul>
-    ${etapas.length ? '' : '<p class="cinza">As próximas mudanças de etapa vão aparecer aqui.</p>'}</section>`;
-}
-
-function historico() {
-  const tipos = { etapa: 'Etapa', msg: 'Mensagem', nota: 'Anotação', sistema: 'Alteração' };
-  const fus = atual.followups.filter(f => f.feito_em).map(f => { const d = new Date(f.feito_em); return { tipo: 'fu', texto: 'Follow-up feito: ' + (f.nota || f.canal), quando: dmy(d) + ' ' + hm(d), criado_em: d.toISOString() }; });
-  const tudo = [...atual.historico.map(h => ({ ...h, criado_em: new Date(h.criado_em).toISOString() })), ...fus].sort((a, b) => b.criado_em.localeCompare(a.criado_em));
-  return `<section class="fl-sec"><h4>Histórico</h4>
-    <div class="fl-agendar"><input id="fl-anotacao" placeholder="Escreva uma anotação…"><button class="btn" data-acao="anotar">Anotar</button></div>
-    ${tudo.length ? `<ul class="linha-tempo">${tudo.map(h => `<li><b>${esc(h.texto)}</b><small>${tipos[h.tipo] || 'Follow-up'} · ${h.quando}${h.autor ? ' · ' + esc(h.autor) : ''}</small></li>`).join('')}</ul>` : '<p class="cinza">Nada registrado ainda.</p>'}</section>`;
+function historico(l) {
+  const TIPOS = { etapa: 'Etapa', msg: 'Mensagem', nota: 'Anotação', sistema: 'Alteração', ...TIPO_REG };
+  const hs = atual.historico.filter(h => !TIPO_REG[h.tipo]).map(h => ({ quando: new Date(h.criado_em), tipo: TIPOS[h.tipo] || 'Alteração', texto: h.texto, autor: h.autor, marco: h.tipo === 'etapa' }));
+  const tudo = [...feitos(), ...hs].sort((a, b) => b.quando - a.quando);
+  tudo.push({ quando: new Date(l.criado_em), tipo: 'Entrada', texto: [l.origem || 'Sem origem', l.campanha, l.criativo].filter(Boolean).join(' · '), marco: true });
+  return `<section class="fl-sec">
+    <div class="fl-sec-cab"><h4>Histórico</h4><small class="cinza">o que foi feito, etapas, mensagens e alterações</small></div>
+    <ol class="fl-reg">${tudo.map(linhaFeito).join('')}</ol>
+  </section>`;
 }
 
 // Sugestões de mensagem por etapa ({nome}, {emp}, {visita}, {empresa})
@@ -360,12 +555,10 @@ const MODELOS = {
   proposta: ['Oi {nome}! Conseguiu avaliar a proposta? Fico à disposição para ajustar o que precisar.'],
   venda: ['{nome}, foi um prazer! Se conhecer alguém procurando imóvel, vou adorar ajudar também.']
 };
-function sugerir() {
+function sugestao() {
   const l = atual.lead, lista = MODELOS[l.etapa] || MODELOS.novo;
-  const txt = lista[modelo++ % lista.length].replace(/{nome}/g, (l.nome || '').split(' ')[0]).replace(/{empresa}/g, EMPRESA)
+  return lista[modelo % lista.length].replace(/{nome}/g, (l.nome || '').split(' ')[0]).replace(/{empresa}/g, EMPRESA)
     .replace(/{emp}/g, l.empreendimento || 'nossos empreendimentos').replace(/{visita}/g, l.visita_rotulo ? l.visita_rotulo.toLowerCase() : 'agendada');
-  const t = document.getElementById('fl-texto');
-  t.value = txt; t.focus();
 }
 async function enviarMensagem() {
   const t = document.getElementById('fl-texto'), txt = t.value.trim();
@@ -375,20 +568,61 @@ async function enviarMensagem() {
   await recarregarFicha();
 }
 
+// Observações: salvam ao sair do campo (sem redesenhar a ficha, para não perder o lugar)
+async function salvarObs() {
+  const t = document.getElementById('fl-obs');
+  if (!t || !atual) return;
+  const l = atual.lead, novo = t.value.trim(), antes = l.notas || '';
+  if (novo === antes.trim()) return;
+  const st = document.getElementById('fl-obs-st');
+  l.notas = novo; // já conta como salvo: sair do campo e fechar a ficha não salvam duas vezes
+  try { await api('lead_campo', { id: l.id, campo: 'notas', valor: novo }); } catch (e) {
+    l.notas = antes;
+    if (e.status === 401) return telaEntrada();
+    if (st) st.textContent = 'Não salvou: ' + e.message; return;
+  }
+  mudou = true;
+  if (st) st.textContent = 'Salvo ✓';
+}
+
+// Mostra o "Como foi?" atualizado sem redesenhar (o texto digitado não se perde)
+function atualizarConc() {
+  const caixa = fichaC.querySelector('.fl-feito');
+  if (!caixa || !flConc) return;
+  caixa.querySelectorAll('[data-res]').forEach(b => { const on = b.dataset.res === flConc.res; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  caixa.querySelector('[data-acao="salvar-feito"]').disabled = !(flConc.res && flConc.relato.trim());
+  caixa.querySelector('#fl-feito-aviso').textContent = avisoConc();
+}
+const redesenharAgenda = () => {
+  const q = fichaC.querySelector('.ag-quando'), btn = fichaC.querySelector('[data-acao="agendar"]');
+  if (!q || !btn) return desenhar();
+  q.innerHTML = quandoHtml(flAg.q, new Set(agendados().map(it => diaLocal(it.quando))));
+  const d = flAg.q.data, visita = flAg.tipo === 'visita';
+  btn.disabled = !d;
+  btn.textContent = (flAg.remarcando ? 'Remarcar' : visita ? (atual.lead.visita_em ? 'Remarcar visita' : 'Marcar visita') : 'Agendar') + (d ? ' · ' + rotuloQuando(d) : '');
+};
+
 // ---------- Ações da ficha ----------
 async function cliqueFicha(e) {
-  const el = e.target.closest('[data-acao], [data-etapa], [data-aba], [data-dias]');
+  // fora do menu "⋯": fecha o menu
+  if (flMenu && !e.target.closest('.fl-mais')) { flMenu = false; fichaC.querySelector('.fl-menu')?.setAttribute('hidden', ''); }
+  if (flAg && fichaC.querySelector('.ag-quando')?.contains(e.target) && quandoClique(e, flAg.q, redesenharAgenda)) return;
+  const el = e.target.closest('[data-acao], [data-etapa], [data-aba], [data-modo], [data-ag-tipo], [data-reg-tipo], [data-res]');
   if (!el) return;
-  const l = atual.lead, mostra = sel => { const f = fichaC.querySelector(sel); f.hidden = !f.hidden; };
-  if (el.dataset.aba) { aba = el.dataset.aba; desenhar(); return; }
-  if (el.dataset.dias) { document.getElementById('fl-fu-quando').value = paraInput(daqui(+el.dataset.dias)); return; }
+  const l = atual.lead, ds = el.dataset;
+  if (ds.aba) { aba = ds.aba; flTopo = true; desenhar(); return; }
+  if (ds.modo) { flModo = ds.modo; desenhar(); return; }
+  if (ds.agTipo) { flAg.tipo = ds.agTipo; desenhar(); return; }
+  if (ds.regTipo) { flReg.tipo = ds.regTipo; const t = $('#reg-texto'); if (t) flReg.texto = t.value; desenhar(); $('#reg-texto')?.focus(); return; }
+  if (ds.res) { flConc.res = flConc.res === ds.res ? '' : ds.res; atualizarConc(); return; }
   try {
-    if (el.dataset.etapa) {
-      if (el.dataset.etapa === l.etapa) return;
-      await mudarEtapa(l.id, el.dataset.etapa, l.etapa); await recarregarFicha(); return;
+    if (ds.etapa) {
+      if (ds.etapa === l.etapa) return;
+      await mudarEtapa(l.id, ds.etapa, l.etapa); await recarregarFicha(); return;
     }
-    switch (el.dataset.acao) {
+    switch (ds.acao) {
       case 'fechar': ficha.close(); break;
+      case 'mais': flMenu = !flMenu; fichaC.querySelector('.fl-menu').toggleAttribute('hidden', !flMenu); el.setAttribute('aria-expanded', flMenu); break;
       case 'ganho': await mudarEtapa(l.id, GANHOS[0], l.etapa); await recarregarFicha(); break;
       case 'perdido': if (confirm('Marcar este lead como perdido?')) { await mudarEtapa(l.id, PERDIDOS[0], l.etapa); await recarregarFicha(); } break;
       case 'naolead': if (confirm('Marcar como "não é lead"?')) { await mudarEtapa(l.id, PERDIDOS[1] || PERDIDOS[0], l.etapa); await recarregarFicha(); } break;
@@ -398,40 +632,72 @@ async function cliqueFicha(e) {
         if (v !== null) await salvarCampo('valor', v);
         break;
       }
-      case 'visita': mostra('.fl-visita-form'); break;
-      case 'salvar-visita': {
-        const d = doInput(document.getElementById('fl-visita').value);
-        if (!d) { alert('Escolha o dia e o horário da visita.'); return; }
-        await enviar('lead_campo', { id: l.id, campo: 'visita_em', valor: d.toISOString() });
-        // quem ainda não estava em visita agendada passa para lá
-        if (['novo', 'primeiro_contato', 'respondeu', 'nao_respondeu'].includes(l.etapa)) await mudarEtapa(l.id, 'visita_agendada', l.etapa);
-        await recarregarFicha(); break;
-      }
-      case 'desmarcar': await salvarCampo('visita_em', ''); break;
-      case 'agendar': {
-        const q = doInput(document.getElementById('fl-fu-quando').value);
-        if (!q) { alert('Escolha quando (ou clique em Amanhã / Em 3 dias / Em 7 dias).'); return; }
-        await enviar('fu_salvar', { lead_id: l.id, quando: q.toISOString(), canal: 'WhatsApp', nota: document.getElementById('fl-fu-nota').value });
-        window.aviso?.('Follow-up agendado ✓');
-        await recarregarFicha(); break;
-      }
-      case 'fu-feito': await enviar('fu_concluir', { id: Number(el.dataset.fu) }); await recarregarFicha(); break;
       case 'ficha': abrirQuali(); break;
-      case 'notas': mostra('.fl-notas-form'); break;
-      case 'salvar-notas': await salvarCampo('notas', document.getElementById('fl-notas').value); break;
-      case 'anotar': {
-        const t = document.getElementById('fl-anotacao').value.trim();
-        if (t) { await enviar('historico', { id: l.id, tipo: 'nota', texto: t }); await recarregarFicha(); }
-        break;
-      }
       case 'remover':
         if (!confirm('Remover este lead de vez?')) return;
         await enviar('lead_excluir', { id: l.id }); mudou = true; ficha.close(); break;
-      case 'sugerir': sugerir(); break;
+
+      // concluir um agendado: abre o "Como foi?"
+      case 'concluir': flConc = { chave: ds.item, res: '', relato: '' }; desenhar(); $('#fl-relato')?.focus({ preventScroll: true }); break;
+      case 'cancelar-feito': flConc = null; desenhar(); break;
+      case 'salvar-feito': {
+        if (!flConc || !flConc.res || !flConc.relato.trim()) return;
+        const corpo = { resultado: flConc.res, relato: flConc.relato.trim() };
+        el.disabled = true;
+        try {
+          if (flConc.chave === 'visita') await enviar('visita_feita', { id: l.id, ...corpo });
+          else await enviar('fu_concluir', { id: Number(flConc.chave.split(':')[1]), ...corpo });
+        } catch (x) { el.disabled = false; return; }
+        window.aviso?.('Registrado em Feito ✓');
+        flConc = null; flModo = 'agendar'; flAg = null;
+        await recarregarFicha(); break;
+      }
+      // remarcar: o seletor de dia e hora já vem com o que estava marcado
+      case 'remarcar': {
+        const it = agendados().find(x => x.chave === ds.item);
+        if (!it) return;
+        flModo = 'agendar'; flConc = null;
+        flAg = { tipo: it.tipo, q: { data: new Date(it.quando < new Date() ? daqui(1, it.quando.getHours()) : it.quando) }, nota: it.tipo === 'fu' ? it.texto : '', remarcando: it };
+        desenhar(); fichaC.querySelector('.ag')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); break;
+      }
+      case 'cancelar-remarcar': flAg = novoAg(); desenhar(); break;
+      case 'agendar': {
+        const d = flAg.q.data, nota = ($('#ag-nota')?.value ?? flAg.nota).trim(), rem = flAg.remarcando;
+        if (!d) return;
+        if (d < new Date(Date.now() - 5 * 60000)) { alert('Esse horário já passou. Escolha outro.'); return; }
+        el.disabled = true;
+        try {
+          if (flAg.tipo === 'visita') {
+            await enviar('lead_campo', { id: l.id, campo: 'visita_em', valor: d.toISOString() });
+            // quem ainda não estava em visita agendada passa para lá
+            if (['novo', 'primeiro_contato', 'respondeu', 'nao_respondeu'].includes(l.etapa)) await mudarEtapa(l.id, 'visita_agendada', l.etapa);
+            window.aviso?.(rem || l.visita_em ? 'Visita remarcada ✓' : 'Visita marcada ✓');
+          } else {
+            const texto = nota || FU_REGRAS[l.etapa]?.[1] || 'Entrar em contato';
+            if (rem) await enviar('fu_salvar', { id: rem.id, quando: d.toISOString(), canal: rem.canal || 'WhatsApp', nota: texto });
+            else await enviar('fu_salvar', { lead_id: l.id, quando: d.toISOString(), canal: 'WhatsApp', nota: texto });
+            window.aviso?.(rem ? 'Follow-up remarcado ✓' : 'Follow-up agendado ✓');
+          }
+        } catch (x) { el.disabled = false; return; }
+        flAg = null;
+        await recarregarFicha(); break;
+      }
+      case 'registrar': {
+        const t = $('#reg-texto'), txt = (t?.value || '').trim();
+        if (!txt) { t?.focus(); return; }
+        el.disabled = true;
+        try { await enviar('historico', { id: l.id, tipo: flReg.tipo, texto: txt }); } catch (x) { el.disabled = false; return; }
+        window.aviso?.('Registrado ✓');
+        flReg.texto = ''; flModo = 'agendar'; // depois de registrar, o natural é marcar o próximo passo
+        await recarregarFicha(); break;
+      }
+      case 'usar-sug': { const t = $('#fl-texto'); t.value = sugestao(); t.focus(); break; }
+      case 'outra-sug': modelo++; $('#fl-sug-txt').textContent = sugestao(); break;
       case 'enviar': await enviarMensagem(); break;
     }
   } catch (x) { /* o erro já apareceu na tela */ }
 }
+
 
 // ---------- Novo lead / editar dados básicos ----------
 function preencher(lead) {
@@ -502,12 +768,21 @@ quandoPronto(() => {
     const c = e.target.dataset.campo;
     if (c) salvarCampo(c, e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.value);
   });
+  fichaC.addEventListener('change', e => { if (e.target.id === 'fl-obs') salvarObs(); });
+  // o que se digita no "Como foi?", no agendar e no registrar sobrevive aos redesenhos
+  fichaC.addEventListener('input', e => {
+    const id = e.target.id;
+    if (id === 'fl-relato' && flConc) { flConc.relato = e.target.value; atualizarConc(); }
+    else if (id === 'ag-nota' && flAg) flAg.nota = e.target.value;
+    else if (id === 'reg-texto' && flReg) flReg.texto = e.target.value;
+    else if (id === 'fl-obs') { const st = $('#fl-obs-st'); if (st) st.textContent = 'salva ao sair do campo'; }
+  });
   fichaC.addEventListener('keydown', e => {
     if (e.target.id === 'fl-texto' && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensagem(); }
   });
   ficha.addEventListener('click', e => { if (e.target === ficha) ficha.close(); });
   // o que mudou na ficha aparece no quadro, nas listas e nos números ao fechar
-  ficha.addEventListener('close', () => { if (mudou) { mudou = false; atualizar(); } });
+  ficha.addEventListener('close', async () => { await salvarObs(); if (mudou) { mudou = false; atualizar(); } });
 
   // clicar em qualquer [data-abrir-lead] abre a ficha (menos em links e botões dentro dele)
   document.addEventListener('click', e => {

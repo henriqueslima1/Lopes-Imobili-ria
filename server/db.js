@@ -71,6 +71,11 @@ export async function migrar() {
     );
     CREATE INDEX IF NOT EXISTS followups_lead ON followups (lead_id);
     CREATE INDEX IF NOT EXISTS followups_quando ON followups (quando);
+    -- ao concluir: como foi (resultado), o que foi feito (relato) e quem concluiu; o histórico guarda o resultado da visita feita
+    ALTER TABLE followups ADD COLUMN IF NOT EXISTS resultado text;
+    ALTER TABLE followups ADD COLUMN IF NOT EXISTS relato text;
+    ALTER TABLE followups ADD COLUMN IF NOT EXISTS feito_por text;
+    ALTER TABLE lead_historico ADD COLUMN IF NOT EXISTS resultado text;
   `);
   await q('DELETE FROM sessoes WHERE expira < now()');
 }

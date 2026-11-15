@@ -84,19 +84,43 @@ test('follow-ups: agendar, concluir marcando o próximo, adiar e contar para o H
   assert.equal(n.novos, 1);
 
   const amanha = new Date(Date.now() + 86400000).toISOString();
-  await acoes.fu_concluir({ corpo: { id, proximo: amanha } });
-  await acoes.fu_concluir({ corpo: { id, proximo: amanha } }); // de novo: não cria outro
+  // concluir pede como foi e o que foi feito, e guarda quem concluiu
+  await assert.rejects(acoes.fu_concluir({ corpo: { id, proximo: amanha } }), /como foi/);
+  await assert.rejects(acoes.fu_concluir({ corpo: { id, resultado: 'Atendeu', relato: '  ' } }), /o que foi feito/);
+  const feito = { id, resultado: 'Atendeu', relato: 'Mandei as opções; quer visitar sábado.', proximo: amanha, proximo_nota: 'Confirmar a visita' };
+  await acoes.fu_concluir({ corpo: feito, eu: { nome: 'Ana Paula', papel: 'colaborador' } });
+  await acoes.fu_concluir({ corpo: feito }); // de novo: não cria outro nem troca o relato
   const { followups } = await acoes.dados();
   assert.equal(followups.length, 2);
-  const prox = followups.find(f => !f.feito_em);
-  assert.equal(prox.nota, 'Próximo contato');
+  const prox = followups.find(f => !f.feito_em), fez = followups.find(f => f.feito_em);
+  assert.equal(prox.nota, 'Confirmar a visita');
   assert.equal(prox.canal, 'WhatsApp');
+  assert.equal(fez.resultado, 'Atendeu');
+  assert.equal(fez.relato, 'Mandei as opções; quer visitar sábado.');
+  assert.equal(fez.feito_por, 'Ana Paula');
 
   const depois = new Date(Date.now() + 2 * 86400000);
   await acoes.fu_adiar({ corpo: { id: prox.id, quando: depois.toISOString() } });
   assert.equal((await acoes.lead({ corpo: { id: lead } })).followups.find(f => f.id === prox.id).quando.getTime(), depois.getTime());
   n = await numerosCrm();
   assert.equal(n.atrasados, 0);
+});
+
+test('registros da ficha: ligação, visita feita (sai da agenda) e tipo desconhecido vira anotação', { skip: semBanco }, async () => {
+  await migrar();
+  await q('TRUNCATE leads RESTART IDENTITY CASCADE');
+  const eu = { nome: 'Ana Paula', papel: 'colaborador' };
+  const { id } = await acoes.lead_salvar({ corpo: { nome: 'Carla' } });
+  await acoes.historico({ corpo: { id, tipo: 'ligacao', texto: 'Não atendeu, deixei recado.' }, eu });
+  await acoes.historico({ corpo: { id, tipo: 'inventado', texto: 'Anotação solta' } });
+  await acoes.lead_campo({ corpo: { id, campo: 'visita_em', valor: '2026-10-25T13:00:00.000Z' } });
+  await assert.rejects(acoes.visita_feita({ corpo: { id, relato: 'Foi' } }), /como foi/);
+  await acoes.visita_feita({ corpo: { id, resultado: 'Visitou e gostou', relato: 'Gostou da planta de 2 quartos.' }, eu });
+  await assert.rejects(acoes.visita_feita({ corpo: { id: 999, resultado: 'Remarcou', relato: 'x' } }), /não encontrado/);
+  const f = await acoes.lead({ corpo: { id } });
+  assert.equal(f.lead.visita_em, null);
+  const h = f.historico.filter(x => x.tipo !== 'sistema').map(x => [x.tipo, x.resultado, x.texto, x.autor]);
+  assert.deepEqual(h, [['visita', 'Visitou e gostou', 'Gostou da planta de 2 quartos.', 'Ana Paula'], ['nota', null, 'Anotação solta', null], ['ligacao', null, 'Não atendeu, deixei recado.', 'Ana Paula']]);
 });
 
 test('ajustes: listas sem repetir, metas de 0 a 100 e o link da agenda nunca volta para a tela', { skip: semBanco }, async () => {

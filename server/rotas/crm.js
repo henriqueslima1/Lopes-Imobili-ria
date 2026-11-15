@@ -56,8 +56,17 @@ const lista = (v, max) => [...new Set((Array.isArray(v) ? v : []).map(x => texto
 const CAMPOS_LEAD = 'id, nome, telefone, instagram, objetivo, tipologia, empreendimento, notas, etapa, origem, campanha, conjunto, criativo, valor, responsavel, prioridade, temperatura, nao_contatar, visita_em, vendido_em, criado_em, atualizado_em';
 const enxuto = r => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== null && v !== '' && v !== false));
 
-async function historico(exec, lead, tipo, txt, autor = null) {
-  await exec('INSERT INTO lead_historico (lead_id, tipo, texto, autor) VALUES ($1, $2, $3, $4)', [lead, tipo, txt, autor]);
+async function historico(exec, lead, tipo, txt, autor = null, resultado = null) {
+  await exec('INSERT INTO lead_historico (lead_id, tipo, texto, autor, resultado) VALUES ($1, $2, $3, $4, $5)', [lead, tipo, txt, autor, resultado]);
+}
+// O que a ficha registra à mão (além da mensagem enviada): anotação, ligação, conversa no WhatsApp ou visita
+const TIPOS_REGISTRO = ['msg', 'nota', 'ligacao', 'whatsapp', 'visita'];
+// Concluir um follow-up ou uma visita pede como foi e o que foi feito: é o que fica em "Feito" na ficha
+function comoFoi(corpo) {
+  const resultado = texto(corpo.resultado, 60), relato = texto(corpo.relato, 4000);
+  if (!resultado) throw erro('Escolha como foi o contato.');
+  if (!relato) throw erro('Conte o que foi feito: fica registrado na ficha do lead.');
+  return { resultado, relato };
 }
 async function existeLead(id) {
   const r = await q('SELECT etapa FROM leads WHERE id = $1', [id]);
@@ -154,7 +163,7 @@ export const acoes = {
   async dados({ eu } = {}) {
     const [leads, fus, ajustes, ical, responsaveis] = await Promise.all([
       q(`SELECT ${CAMPOS_LEAD} FROM leads ORDER BY atualizado_em DESC, id DESC`),
-      q(`SELECT id, lead_id, quando, canal, nota, feito_em, criado_em FROM followups
+      q(`SELECT id, lead_id, quando, canal, nota, feito_em, resultado, relato, feito_por, criado_em FROM followups
          WHERE feito_em IS NULL OR feito_em >= now() - interval '120 days' OR quando >= now() - interval '120 days' ORDER BY quando, id`),
       lerAjustes(), lerConfig('crm_agenda_ical', ''), lerResponsaveis()
     ]);
@@ -167,8 +176,8 @@ export const acoes = {
     const id = idNum(corpo.id);
     const [l, f, h] = await Promise.all([
       q(`SELECT ${CAMPOS_LEAD}, ficha FROM leads WHERE id = $1`, [id]),
-      q('SELECT id, quando, canal, nota, feito_em FROM followups WHERE lead_id = $1 ORDER BY feito_em IS NOT NULL, quando', [id]),
-      q('SELECT tipo, texto, autor, criado_em FROM lead_historico WHERE lead_id = $1 ORDER BY criado_em DESC, id DESC LIMIT 200', [id])
+      q('SELECT id, quando, canal, nota, feito_em, resultado, relato, feito_por FROM followups WHERE lead_id = $1 ORDER BY feito_em IS NOT NULL, quando', [id]),
+      q('SELECT id, tipo, texto, resultado, autor, criado_em FROM lead_historico WHERE lead_id = $1 ORDER BY criado_em DESC, id DESC LIMIT 200', [id])
     ]);
     if (!l.rows[0]) throw erro('Lead não encontrado.', 404);
     return { lead: l.rows[0], followups: f.rows, historico: h.rows };
@@ -226,8 +235,18 @@ export const acoes = {
     const id = idNum(corpo.id), txt = texto(corpo.texto, 4000);
     if (!txt) throw erro('Escreva o texto.');
     await existeLead(id);
-    await historico(q, id, ['msg', 'nota'].includes(corpo.tipo) ? corpo.tipo : 'nota', txt, autorDe(eu));
+    await historico(q, id, TIPOS_REGISTRO.includes(corpo.tipo) ? corpo.tipo : 'nota', txt, autorDe(eu), texto(corpo.resultado, 60) || null);
     return { ok: true };
+  },
+  // Visita marcada que aconteceu (ou não): sai da agenda e fica em "Feito" com como foi, o que foi feito e quem fez
+  async visita_feita({ corpo, eu }) {
+    const id = idNum(corpo.id), { resultado, relato } = comoFoi(corpo);
+    return transacao(async exec => {
+      const r = await exec('UPDATE leads SET visita_em = NULL, atualizado_em = now() WHERE id = $1', [id]);
+      if (!r.rowCount) throw erro('Lead não encontrado. Recarregue a página.', 404);
+      await historico(exec, id, 'visita', relato, autorDe(eu), resultado);
+      return { ok: true };
+    });
   },
 
   // ---------- follow-ups (as datas chegam prontas da tela, no horário de quem usa) ----------
@@ -243,12 +262,14 @@ export const acoes = {
     const r = await q('INSERT INTO followups (lead_id, quando, canal, nota) VALUES ($1, $2, $3, $4) RETURNING id', [lead, quando, canal, nota]);
     return { id: r.rows[0].id };
   },
-  async fu_concluir({ corpo }) {
-    const id = idNum(corpo.id, 'Follow-up'), proximo = corpo.proximo ? data(corpo.proximo) : null;
+  // Concluir: como foi e o que foi feito são obrigatórios (e fica quem concluiu); dá para já marcar o próximo contato
+  async fu_concluir({ corpo, eu }) {
+    const id = idNum(corpo.id, 'Follow-up'), { resultado, relato } = comoFoi(corpo);
+    const proximo = corpo.proximo ? data(corpo.proximo) : null, notaProx = texto(corpo.proximo_nota, 2000) || 'Próximo contato';
     return transacao(async exec => {
-      const r = await exec('UPDATE followups SET feito_em = now() WHERE id = $1 AND feito_em IS NULL RETURNING lead_id, canal', [id]);
+      const r = await exec('UPDATE followups SET feito_em = now(), resultado = $2, relato = $3, feito_por = $4 WHERE id = $1 AND feito_em IS NULL RETURNING lead_id, canal', [id, resultado, relato, autorDe(eu)]);
       // já marcar o próximo contato com o mesmo lead
-      if (r.rows[0] && proximo) await exec('INSERT INTO followups (lead_id, quando, canal, nota) VALUES ($1, $2, $3, $4)', [r.rows[0].lead_id, proximo, r.rows[0].canal, 'Próximo contato']);
+      if (r.rows[0] && proximo) await exec('INSERT INTO followups (lead_id, quando, canal, nota) VALUES ($1, $2, $3, $4)', [r.rows[0].lead_id, proximo, r.rows[0].canal, notaProx]);
       return { ok: true };
     });
   },
