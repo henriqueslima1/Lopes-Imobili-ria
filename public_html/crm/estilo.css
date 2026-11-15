@@ -517,7 +517,9 @@ a.tb-linha:hover, a.tb-linha:focus-visible { background: var(--leve); }
 .fp.alerta { background: rgba(255, 99, 105, .2); color: #FF9599; } .fp.hoje { background: rgba(214, 158, 46, .22); color: #F5C966; }
 .faca-nome { font-size: clamp(26px, 2.8vw, 38px); font-weight: 400; letter-spacing: -.04em; line-height: 1.1; text-wrap: balance; }
 .faca-meta { margin-top: 8px; color: var(--escuro-sub); font-size: 14px; }
-.faca-lead { border: 0; background: none; padding: 0; color: var(--escuro-txt); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .3); text-underline-offset: 3px; }
+.faca-lead { color: var(--escuro-txt); font-weight: 600; }
+.faca[data-id] { cursor: pointer; }
+.faca .fu-painel, .faca .faca-acts { cursor: default; }
 .faca-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .faca-pq { background: rgba(255, 255, 255, .06); border-radius: 16px; padding: 12px 14px; font-size: 13.5px; color: var(--escuro-sub); }
 .faca-pq b { color: var(--acento); font-weight: 600; }

@@ -76,7 +76,10 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
   const waLink = l => l.telefone && !l.nao_contatar
     ? `<a class="fz-wa" href="${esc(wa(l.telefone))}" target="_blank" rel="noopener" title="Chamar no WhatsApp" aria-label="Chamar ${esc(l.nome || 'o lead')} no WhatsApp">${ico('whats')}</a>` : '<span class="fz-wa vazio"></span>';
   const avLead = l => `<i style="--c:${cor(l.etapa)}">${esc((iniciais(l.nome) || '?').toUpperCase())}</i>`;
-  const leadCel = l => `<button type="button" class="fu-lead" data-abrir-lead="${l.id}" title="Abrir a ficha">${avLead(l)}<span><b>${esc(l.nome || 'Sem nome')}</b><small>${esc([l.empreendimento, l.valor ? moedaCurta(l.valor) : ''].filter(Boolean).join(' · '))}</small></span></button>`;
+  const leadTx = l => `${avLead(l)}<span><b>${esc(l.nome || 'Sem nome')}</b><small>${esc([l.empreendimento, l.valor ? moedaCurta(l.valor) : ''].filter(Boolean).join(' · '))}</small></span>`;
+  // na linha da tarefa o nome do lead não abre a ficha: tocar em qualquer lugar da linha abre a tarefa (a ficha fica em "Abrir ficha")
+  const leadCel = l => `<span class="fu-lead">${leadTx(l)}</span>`;
+  const leadFicha = l => `<button type="button" class="fu-lead" data-abrir-lead="${l.id}" title="Abrir a ficha">${leadTx(l)}</button>`;
   const etapaChip = l => `<span class="chip etapa" style="--c:${cor(l.etapa)}">${esc(nomeEtapa(l.etapa))}</span>`;
 
   // uma linha da lista
@@ -104,7 +107,7 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
     return `<li class="tarefa fu-l sug${extra ? ' extra' : ''}" data-busca="${busca({ nota: s.motivo }, l)}" data-lead="${l.id}" data-nota="${esc(s.motivo)}">
       <div class="t-frente">
         <span class="fu-sem" title="Sem contato marcado">${ico('relogio')}</span>
-        ${leadCel(l)}
+        ${leadFicha(l)}
         <span class="fu-tt">${esc(s.motivo)}</span>
         <span class="fu-et">${etapaChip(l)}</span>
         <span class="fu-canal">—</span>
@@ -134,7 +137,7 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
       : ['', f.quando < semana0 ? DIAS_SEM_FU[f.quando.getDay()].slice(0, 3) + ' ' + f.quando.getDate() : dm(f.quando)];
     const aberto = !feita && fuAb && fuAb.id === f.id;
     return `<div class="fk${c === 'atr' ? ' atr' : ''}${feita ? ' feita' : ''}${extra ? ' extra' : ''}${aberto ? ' expandida' : ''}" data-id="${f.id}" data-busca="${busca(f, l)}"${feita || aberto ? '' : ' draggable="true"'}>
-      <div class="fk-top"><button type="button" class="fk-lead" data-abrir-lead="${l.id}" title="Abrir a ficha">${avLead(l)}<span>${esc(l.nome || 'Sem nome')}</span></button>
+      <div class="fk-top"><span class="fk-lead">${avLead(l)}<span>${esc(l.nome || 'Sem nome')}</span></span>
         <button class="circulo${feita ? ' feito' : ''}" type="button" ${feita ? 'disabled' : 'data-acao="concluir"'} title="${feita ? 'Feito' : 'Marcar como feito'}" aria-label="${feita ? 'Feito' : 'Marcar como feito'}">${feita ? '✓' : ''}</button></div>
       <p class="fk-tt">${esc(f.nota || 'Entrar em contato')}</p>
       ${feita && (f.resultado || f.relato) ? `<p class="fk-relato">${esc([f.resultado, f.relato].filter(Boolean).join(' · '))}</p>` : ''}
@@ -159,10 +162,10 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
     return `<section class="faca" data-id="${top.id}">
       <div class="faca-topo"><span class="faca-ico">${svgFu(IC_FU.alvo, 19)}</span><h2>Faça agora</h2><span class="fp">1 de ${fila.length} na fila</span></div>
       <div><p class="faca-nome">${esc(top.nota || 'Entrar em contato')}</p>
-        <p class="faca-meta"><button type="button" class="faca-lead" data-abrir-lead="${l.id}">${esc(l.nome || 'Sem nome')}</button> · ${esc(nomeEtapa(l.etapa))}${l.valor ? ' · ' + esc(moedaCurta(l.valor)) : ''}${l.empreendimento ? ' · ' + esc(l.empreendimento) : ''}</p></div>
+        <p class="faca-meta"><span class="faca-lead">${esc(l.nome || 'Sem nome')}</span> · ${esc(nomeEtapa(l.etapa))}${l.valor ? ' · ' + esc(moedaCurta(l.valor)) : ''}${l.empreendimento ? ' · ' + esc(l.empreendimento) : ''}</p></div>
       <div class="faca-tags"><span class="fp ${d > 0 ? 'alerta' : 'hoje'}">${d > 0 ? 'Atrasado ' + plural(d, 'dia', 'dias') : 'Hoje, ' + hm(top.quando)}</span>${top.canal ? `<span class="fp">${esc(top.canal)}</span>` : ''}${l.temperatura ? `<span class="fp">${esc(TEMPERATURAS[l.temperatura] || '')}</span>` : ''}${l.responsavel ? `<span class="fp">${esc(l.responsavel)}</span>` : ''}</div>
       <p class="faca-pq"><b>Por que primeiro:</b> ${esc(MOTIVO_FU[l.etapa] || 'É o contato mais atrasado.')}</p>
-      ${fila.length > 1 ? `<div class="faca-fila"><p>Depois, na fila</p>${fila.slice(1, 4).map(f => `<button type="button" data-abrir-lead="${f.lead.id}"><span class="${f.quando < hoje0 ? 'atr' : 'hj'}">${f.quando < hoje0 ? 'há ' + plural(atraso(f), 'dia', 'dias') : hm(f.quando)}</span><b>${esc(f.nota || 'Entrar em contato')}</b><small>${esc(f.lead.nome || '')}</small></button>`).join('')}</div>` : ''}
+      ${fila.length > 1 ? `<div class="faca-fila"><p>Depois, na fila</p>${fila.slice(1, 4).map(f => `<button type="button" data-abrir-fu="${f.id}" title="Abrir a tarefa"><span class="${f.quando < hoje0 ? 'atr' : 'hj'}">${f.quando < hoje0 ? 'há ' + plural(atraso(f), 'dia', 'dias') : hm(f.quando)}</span><b>${esc(f.nota || 'Entrar em contato')}</b><small>${esc(f.lead.nome || '')}</small></button>`).join('')}</div>` : ''}
       <div class="faca-acts">${l.telefone && !l.nao_contatar ? `<a class="fb lime" href="${esc(wa(l.telefone))}" target="_blank" rel="noopener">${ico('whats')}Chamar no WhatsApp</a>` : ''}
         <button class="fb" type="button" data-acao="concluir">${svgFu(IC_FU.check, 15)}Feito</button>
         <button class="fb ghost" type="button" data-acao="adiar">Adiar para amanhã</button></div>
@@ -383,6 +386,18 @@ function ligarAcoes() {
       return;
     }
 
+    // "Depois, na fila": abre a tarefa lá na lista (ou no quadro)
+    const fila = e.target.closest('[data-abrir-fu]');
+    if (fila) {
+      const alvo = $(`.tarefa[data-id="${fila.dataset.abrirFu}"], .fk[data-id="${fila.dataset.abrirFu}"]`);
+      if (!alvo) return;
+      const g = alvo.closest('.fu-g');
+      if (g) { g.classList.remove('fechado'); g.classList.add('aberta'); fuFechados.delete(g.dataset.grupo); }
+      alvo.closest('.fk-itens')?.classList.add('aberta');
+      if (!alvo.classList.contains('expandida')) abrirPainel(alvo);
+      alvo.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return;
+    }
     const b = e.target.closest('[data-acao]');
     if (b) {
       const item = itemFu(b), a = b.dataset.acao;
@@ -403,6 +418,9 @@ function ligarAcoes() {
       return;
     }
     if (e.target.closest('a, button, input, select, label')) return;
+    // tocar no "Faça agora" (fora dos botões) abre a tarefa nele
+    const faca = e.target.closest('.faca[data-id]');
+    if (faca) { if (!faca.querySelector('.fu-painel')) abrirPainel(faca); return; }
     // tocar na linha ou no cartão (fora dos botões) abre o painel de concluir; em "Sem próximo passo", o agendamento
     const li = e.target.closest('.tarefa');
     if (li) {
