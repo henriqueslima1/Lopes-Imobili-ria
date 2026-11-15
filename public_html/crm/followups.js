@@ -77,9 +77,8 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
     ? `<a class="fz-wa" href="${esc(wa(l.telefone))}" target="_blank" rel="noopener" title="Chamar no WhatsApp" aria-label="Chamar ${esc(l.nome || 'o lead')} no WhatsApp">${ico('whats')}</a>` : '<span class="fz-wa vazio"></span>';
   const avLead = l => `<i style="--c:${cor(l.etapa)}">${esc((iniciais(l.nome) || '?').toUpperCase())}</i>`;
   const leadTx = l => `${avLead(l)}<span><b>${esc(l.nome || 'Sem nome')}</b><small>${esc([l.empreendimento, l.valor ? moedaCurta(l.valor) : ''].filter(Boolean).join(' · '))}</small></span>`;
-  // na linha da tarefa o nome do lead não abre a ficha: tocar em qualquer lugar da linha abre a tarefa (a ficha fica em "Abrir ficha")
+  // o nome do lead não abre a ficha: tocar em qualquer lugar da linha abre a tarefa (a ficha fica em "Abrir ficha")
   const leadCel = l => `<span class="fu-lead">${leadTx(l)}</span>`;
-  const leadFicha = l => `<button type="button" class="fu-lead" data-abrir-lead="${l.id}" title="Abrir a ficha">${leadTx(l)}</button>`;
   const etapaChip = l => `<span class="chip etapa" style="--c:${cor(l.etapa)}">${esc(nomeEtapa(l.etapa))}</span>`;
 
   // uma linha da lista
@@ -104,10 +103,11 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
   // uma linha de "Sem próximo passo": o botão marca o contato sugerido
   const linhaSug = (s, extra) => {
     const l = s.l, quandoTxt = diaLocal(s.quando) === diaLocal(new Date()) ? 'hoje' : 'amanhã';
-    return `<li class="tarefa fu-l sug${extra ? ' extra' : ''}" data-busca="${busca({ nota: s.motivo }, l)}" data-lead="${l.id}" data-nota="${esc(s.motivo)}">
+    const aberto = fuAb && fuAb.id === 'sug-' + l.id;
+    return `<li class="tarefa fu-l sug${extra ? ' extra' : ''}${aberto ? ' expandida' : ''}" data-busca="${busca({ nota: s.motivo }, l)}" data-lead="${l.id}" data-nota="${esc(s.motivo)}" data-parado="${s.parado}">
       <div class="t-frente">
         <span class="fu-sem" title="Sem contato marcado">${ico('relogio')}</span>
-        ${leadFicha(l)}
+        ${leadCel(l)}
         <span class="fu-tt">${esc(s.motivo)}</span>
         <span class="fu-et">${etapaChip(l)}</span>
         <span class="fu-canal">—</span>
@@ -115,6 +115,7 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
         ${avResp(l.responsavel)}${waLink(l)}
         <span class="fu-acoes sempre"><button class="mini fu-agendar" type="button" data-acao="sugestao" data-lead="${l.id}" data-quando="${s.quando.toISOString()}" data-nota="${esc(s.motivo)}" title="Agendar para ${esc(fuQuando(s.quando))}">Agendar ${quandoTxt}</button></span>
       </div>
+      ${aberto ? painelFu(sugFu(l, s.motivo, s.parado)) : ''}
     </li>`;
   };
   // um grupo da lista (abre e fecha); longos mostram os primeiros e um "ver mais"
@@ -425,7 +426,7 @@ function ligarAcoes() {
     const li = e.target.closest('.tarefa');
     if (li) {
       if (li.classList.contains('aberta') || Date.now() - (li._deslizou || 0) < 400) return;
-      if (li.classList.contains('sug')) { const l = CRM.porId.get(Number(li.dataset.lead)); if (l) abrirAgendar({ rotulo: rotuloLead(l), nota: li.dataset.nota }); return; }
+      if (li.classList.contains('sug')) { abrirPainel(li); return; }
       if (!li.classList.contains('feitas')) abrirPainel(li);
       return;
     }
@@ -465,28 +466,31 @@ function ligarAcoes() {
 
 // ---------- Concluir ali mesmo: o painel abre dentro da linha, do cartão ou do "Faça agora" ----------
 // Mostra a tarefa, o último contato e as observações do lead; pede como foi e o que foi feito; o próximo follow-up é opcional.
+// "Sem próximo passo" ainda não tem follow-up: o painel trata a sugestão como a tarefa; ao concluir, o follow-up é criado já feito
+const sugFu = (l, motivo, parado) => ({ id: 'sug-' + l.id, sug: true, lead: l, lead_id: l.id, nota: motivo, canal: 'WhatsApp', parado: Number(parado) || 0 });
 function painelFu(f) {
   const l = f.lead;
   const ultimo = CRM.followups.filter(x => x.lead_id === l.id && x.feito_em && x.id !== f.id).sort((a, b) => b.feito_em - a.feito_em)[0];
   return `<div class="fu-painel" data-painel="${f.id}">
     <div class="fu-ctx">
-      <div class="fu-ctx-t"><small>Tarefa</small><b>${esc(f.nota || 'Entrar em contato')}</b><span>${esc(f.canal || 'Contato')} · marcado para ${esc(fuQuando(f.quando).toLowerCase())}</span></div>
+      <div class="fu-ctx-t"><small>${f.sug ? 'Próximo passo sugerido' : 'Tarefa'}</small><b>${esc(f.nota || 'Entrar em contato')}</b><span>${f.sug ? (f.parado ? 'sem contato marcado · parado há ' + plural(f.parado, 'dia', 'dias') : 'sem contato marcado') : esc(f.canal || 'Contato') + ' · marcado para ' + esc(fuQuando(f.quando).toLowerCase())}</span></div>
       ${ultimo ? `<div class="fu-ctx-u"><small>Último contato · ${esc(quandoFeito(ultimo.feito_em))}</small><p>${esc([ultimo.resultado, ultimo.relato || ultimo.nota].filter(Boolean).join(' · '))}</p></div>` : ''}
       ${l.notas ? `<div class="fu-ctx-obs"><small>Observações do lead</small><p>${esc(l.notas)}</p></div>` : ''}
-      <div class="fu-ctx-b"><button type="button" class="mini" data-abrir-lead="${l.id}">Abrir ficha</button><button type="button" class="mini" data-cc-editar>Editar tarefa</button></div>
+      <div class="fu-ctx-b"><button type="button" class="mini" data-abrir-lead="${l.id}">Abrir ficha</button>${f.sug ? '' : '<button type="button" class="mini" data-cc-editar>Editar tarefa</button>'}</div>
     </div>
     <div class="cc">${ccHtml(fuAb, fuAb.marcados)}</div>
   </div>`;
 }
 function abrirPainel(item) {
-  const f = fuDe(item?.dataset.id);
+  const l = item?.classList.contains('sug') ? CRM.porId.get(Number(item.dataset.lead)) : null;
+  const f = l ? sugFu(l, item.dataset.nota, item.dataset.parado) : fuDe(item?.dataset.id);
   if (!f || f.feito_em) return;
   if (fuAb && fuAb.id === f.id) { fecharPainel(); return; } // tocar de novo fecha
   fecharPainel();
   // dias que já têm algo marcado com esse lead (outros follow-ups e a visita) ganham um pontinho
   const marcados = new Set(CRM.followups.filter(x => x.lead_id === f.lead_id && !x.feito_em && x.id !== f.id).map(x => diaLocal(x.quando)));
   if (f.lead.visita_em) marcados.add(diaLocal(f.lead.visita_em));
-  fuAb = { id: f.id, marcados, ...novoConc('fu', f.lead.etapa) };
+  fuAb = { id: f.id, sug: !!f.sug, leadId: f.lead_id, motivo: f.nota, marcados, ...novoConc('fu', f.lead.etapa) };
   item.classList.add('expandida');
   if (item.matches('.fk')) item.draggable = false;
   item.insertAdjacentHTML('beforeend', painelFu(f));
@@ -506,11 +510,16 @@ function fecharPainel() {
 const redesenharPainel = () => { const c = $('.fu-painel .cc'); if (c && fuAb) c.innerHTML = ccHtml(fuAb, fuAb.marcados); };
 async function salvarPainel(b, item) {
   if (!fuAb) return;
-  const f = fuDe(fuAb.id);
-  if (!f) return;
+  const st = fuAb, f = st.sug ? null : fuDe(st.id);
+  if (!st.sug && !f) return;
+  if (!ccValida(st)) return;
   b.disabled = true;
   let r;
-  try { r = await ccSalvar(fuAb, { fuId: f.id, leadId: f.lead_id }); } catch (e) { b.disabled = false; return; }
+  try {
+    // sugestão: cria o follow-up agora (é o contato que acabou de ser feito) e conclui em seguida
+    const fuId = st.sug ? (await enviar('fu_salvar', { lead_id: st.leadId, quando: new Date().toISOString(), canal: 'WhatsApp', nota: st.motivo || 'Entrar em contato' })).id : f.id;
+    r = await ccSalvar(st, { fuId, leadId: st.leadId });
+  } catch (e) { b.disabled = false; atualizar(); return; }
   if (r === false) { b.disabled = false; return; }
   fuAb = null;
   sairEAtualizar(item.classList.contains('faca') ? null : item);
