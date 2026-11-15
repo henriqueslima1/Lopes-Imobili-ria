@@ -519,7 +519,7 @@ a.tb-linha:hover, a.tb-linha:focus-visible { background: var(--leve); }
 .faca-meta { margin-top: 8px; color: var(--escuro-sub); font-size: 14px; }
 .faca-lead { color: var(--escuro-txt); font-weight: 600; }
 .faca[data-id] { cursor: pointer; }
-.faca .fu-painel, .faca .faca-acts { cursor: default; }
+.faca .faca-acts { cursor: default; }
 .faca-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .faca-pq { background: rgba(255, 255, 255, .06); border-radius: 16px; padding: 12px 14px; font-size: 13.5px; color: var(--escuro-sub); }
 .faca-pq b { color: var(--acento); font-weight: 600; }
@@ -577,7 +577,7 @@ a.tb-linha:hover, a.tb-linha:focus-visible { background: var(--leve); }
 .fu-tab { padding-bottom: 6px; }
 /* a lista rola por dentro: a página não cresce sem fim e o cabeçalho das colunas fica sempre visível */
 .fu-corpo { max-height: min(660px, 72vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding-bottom: 8px; }
-.fu-cab, .fu-tab .t-frente { display: grid; grid-template-columns: 22px minmax(150px, 1.1fr) minmax(120px, 1.3fr) 132px 80px 112px 26px 28px 104px; align-items: center; gap: 12px; padding: 0 22px; }
+.fu-cab, .fu-tab .t-frente { display: grid; grid-template-columns: 22px minmax(150px, 1.1fr) minmax(120px, 1.3fr) 132px 80px 112px 40px 28px 124px; align-items: center; gap: 12px; padding: 0 22px; }
 .fu-cab { position: sticky; top: 0; z-index: 2; background: var(--forte); padding-top: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--borda); }
 .fu-cab span { font-size: 11.5px; font-weight: 600; color: var(--apagado); white-space: nowrap; }
 .fu-gt { display: flex; align-items: center; gap: 9px; width: 100%; padding: 14px 22px 8px; border: 0; background: none; text-align: left; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--suave); }
@@ -615,6 +615,8 @@ a.tb-linha:hover, a.tb-linha:focus-visible { background: var(--leve); }
 .fu-acoes .mini { height: 28px; padding: 0 10px; font-size: 12px; }
 .fu-acoes .fu-agendar { height: 30px; padding: 0 12px; font-size: 12px; white-space: nowrap; }
 .fu-q-sug b { font-weight: 500; color: var(--suave); }
+.fu-tab .t-frente > .fz-av { justify-self: center; }
+.fu-cab span:nth-child(7) { text-align: center; }
 .fz-av { width: 26px; height: 26px; border-radius: 50%; background: var(--tinta); color: var(--destaque); display: grid; place-items: center; font-size: 10px; font-weight: 700; flex: none; }
 .fz-av.vazio { background: var(--leve); color: var(--apagado); }
 .fz-wa { width: 28px; height: 28px; border-radius: 50%; background: #22C55E; color: #fff; display: grid; place-items: center; flex: none; transition: transform .3s var(--spring); }
@@ -969,42 +971,37 @@ button.fl-dica:hover { border-color: var(--foco); background: var(--tinta); }
 .cc-aviso:empty { display: none; }
 .cc-ok { height: 38px; padding: 0 16px; font-size: 13.5px; }
 .cc-ok .ico { width: 14px; height: 14px; }
-/* na tela de Follow-ups o painel abre embaixo da tarefa */
-.fu-painel { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(200px, 270px) minmax(0, 1fr); gap: 20px; padding: 14px 22px 18px 56px; background: var(--forte); border-top: 1px dashed var(--borda2); cursor: default; animation: abrePainel .3s var(--ease); }
-@keyframes abrePainel { from { opacity: 0; transform: translateY(-6px); } }
-.tarefa.expandida .t-frente { background: var(--tinta); }
-.tarefa.expandida { box-shadow: inset 3px 0 0 var(--foco); }
-.fu-ctx { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.fu-ctx small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--apagado); }
-.fu-ctx-t b { display: block; margin-top: 2px; font-size: 14.5px; font-weight: 600; line-height: 1.35; }
-.fu-ctx-t span { font-size: 12.5px; color: var(--suave); }
-.fu-ctx-u p, .fu-ctx-obs p { margin: 3px 0 0; font-size: 13px; line-height: 1.45; color: var(--suave); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.fu-ctx-obs { padding: 8px 10px; border-radius: 12px; background: #FEF6DC; }
-.fu-ctx-obs small { color: #854D0E; }
-:root[data-theme="dark"] .fu-ctx-obs { background: rgba(251, 191, 36, .08); }
-:root[data-theme="dark"] .fu-ctx-obs small { color: #FCD34D; }
-.fu-ctx-b { display: flex; gap: 6px; flex-wrap: wrap; }
-/* no cartão do quadro e no "Faça agora" o espaço é outro */
-.fk .fu-painel { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 10px; padding: 10px 0 0; background: none; }
-.fk .fu-ctx-t, .fk .fu-ctx-u, .fk .fu-ctx-obs { display: none; }
-.fk .qd-dias { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.fk .qd-horas { gap: 8px; }
-.fk.expandida { cursor: default; }
-.fk .fl-res { gap: 4px; }
-.fk .fl-res-b { height: 30px; padding: 0 10px; font-size: 12px; }
-.fk .fu-ctx-b .mini { height: 28px; padding: 0 9px; font-size: 11.5px; }
-.fk .cc-prox { padding: 8px; gap: 8px; }
-.fk .cc-prox-cab { flex-wrap: wrap; }
-.fk .qd-dias { gap: 4px; }
-.fk .qd-dia { height: 44px; border-radius: 10px; }
-.fk .qd-dia b { font-size: 15px; }
-.fk .qd-dia small { font-size: 9.5px; letter-spacing: 0; }
-.fk .qd-turno > div { flex-wrap: wrap; }
-.fk .qd-hora { min-width: 0; height: 32px; padding: 0 7px; font-size: 12.5px; border-radius: 10px; }
-.fk .cc-relato { min-height: 72px; font-size: 13px; }
-.fk .cc-pe .mini, .fk .cc-ok { flex: 1 1 100%; justify-content: center; }
-.fk .cc-ok { height: auto; min-height: 36px; padding: 6px 10px; font-size: 12.5px; white-space: normal; }
-.faca > .fu-painel { grid-column: 1 / -1; margin: 4px -4px 0; padding: 16px; border-radius: 18px; border: 1px solid var(--borda); }
+/* na tela de Follow-ups a tarefa abre num pop-up: quem é, a tarefa, o contexto e o "como foi" */
+dialog.dlg-fu { width: min(640px, calc(100% - 32px)); max-height: calc(100vh - 40px); overflow-y: auto; padding: 22px 24px 18px; }
+dialog.dlg-fu[open] { display: flex; flex-direction: column; gap: 16px; }
+.tf-cab { display: flex; align-items: center; gap: 12px; }
+.tf-av { width: 44px; height: 44px; border-radius: 14px; background: var(--c); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; flex: none; }
+.tf-id { flex: 1; min-width: 0; }
+dialog .tf-id h3 { margin: 0; font-size: 20px; line-height: 1.2; }
+.tf-meta { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; margin-top: 4px; font-size: 13px; color: var(--suave); }
+.tf-x { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--leve); color: var(--suave); font-size: 19px; flex: none; align-self: flex-start; }
+.tf-x:hover { background: var(--borda2); color: var(--texto); }
+.tf-tarefa { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--tinta); border: 1px solid color-mix(in srgb, var(--foco) 30%, transparent); }
+.tf-ic { width: 36px; height: 36px; border-radius: 50%; background: var(--forte); color: var(--destaque); display: grid; place-items: center; flex: none; }
+.tf-tarefa > div:nth-child(2) { flex: 1; min-width: 0; }
+.tf-tarefa small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--destaque); }
+.tf-tarefa b { display: block; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.tf-tarefa em { display: block; font-style: normal; font-size: 12.5px; color: var(--suave); }
+.tf-links { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.tf-links .lnk { font-size: 12.5px; }
+.tf-ctx { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.tf-ctx > div { padding: 10px 12px; border-radius: 14px; background: var(--card2); border: 1px solid var(--borda); min-width: 0; }
+.tf-ctx small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--apagado); }
+.tf-ctx p { margin: 3px 0 0; font-size: 13px; line-height: 1.45; color: var(--suave); white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tf-ctx .tf-obs { background: #FEF6DC; border-color: rgba(161, 98, 7, .2); }
+.tf-ctx .tf-obs small { color: #854D0E; }
+:root[data-theme="dark"] .tf-ctx .tf-obs { background: rgba(251, 191, 36, .08); border-color: rgba(251, 191, 36, .2); }
+:root[data-theme="dark"] .tf-ctx .tf-obs small { color: #FCD34D; }
+.dlg-fu .cc { gap: 12px; }
+.dlg-fu .cc-lb { font-size: 13.5px; }
+.dlg-fu .cc-relato { min-height: 84px; }
+.dlg-fu .cc-pe { position: sticky; bottom: -18px; margin: 4px -24px -18px; padding: 14px 24px 18px; border-top: 1px solid var(--borda); background: var(--folha-bg); }
+
 
 /* o que foi feito, nas linhas e nos cartões já concluídos */
 .fu-tt s { color: var(--apagado); }
@@ -1133,7 +1130,7 @@ dialog.folha-data { width: min(420px, calc(100% - 24px)); padding: 20px 0 18px; 
   .fl-item-tx { flex-basis: calc(100% - 46px); }
   .fl-item .mini:first-of-type { margin-left: 46px; }
   .fl-dados, .fl-grade { grid-template-columns: 1fr; }
-  .fu-painel { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 12px 14px 16px; }
+  .tf-tarefa { flex-wrap: wrap; } .tf-links { flex-direction: row; width: 100%; padding-left: 48px; }
   .t-frente { grid-template-columns: 24px minmax(0, 1fr) auto; row-gap: 6px; }
   .crm-direita { margin-left: 0; width: 100%; }
   .filtros { width: 100%; }
