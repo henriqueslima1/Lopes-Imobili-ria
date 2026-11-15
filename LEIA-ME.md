@@ -30,6 +30,14 @@ tema claro/escuro e o menu da conta (trocar a senha e sair).
 - **Esqueceu a senha do administrador:** no Railway, defina `ADMIN_REDEFINIR_SENHA=1` e a senha nova em
   `ADMIN_SENHA`, espere o servidor subir de novo e depois apague `ADMIN_REDEFINIR_SENHA`.
 
+## Ficha do lead e follow-ups
+
+- A ficha do lead tem observações fixas no topo e o "Acompanhamento": o que está agendado, agendar follow-up
+  ou visita (escolhendo o dia e o horário), registrar ligação/WhatsApp/visita/anotação e a lista **Feito**.
+- Concluir um follow-up (na ficha ou na tela de Follow-ups) sempre pede **como foi** e **o que foi feito**.
+  Fica registrado com a data, a hora e **quem concluiu** (o colaborador logado).
+- Na tela de Follow-ups, ao concluir, dá para já marcar o próximo contato escolhendo o dia e o horário.
+
 ## Vendas por corretor
 
 As vendas saem do CRM: lead na etapa **Venda**, com o nome do corretor em **Responsável** e o **Valor** preenchido.

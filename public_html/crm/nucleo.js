@@ -189,13 +189,15 @@ function semear() {
     { id: 2, lead_id: id('Isabela Costa'), quando: em(0, 11), canal: 'WhatsApp', nota: 'Confirmar a visita' },
     { id: 3, lead_id: id('João Pedro Martins'), quando: em(1, 10), canal: 'Ligação', nota: 'Cobrar retorno da proposta' },
     { id: 4, lead_id: id('Karina Dias'), quando: em(4, 14), canal: 'WhatsApp', nota: 'Enviar simulação do financiamento' },
-    { id: 5, lead_id: id('Elisa Prado'), quando: em(-2, 10), canal: 'WhatsApp', nota: 'Primeiro contato', feito_em: em(-2, 10, 40) },
-    { id: 6, lead_id: id('Fábio Nunes'), quando: em(-6, 10), canal: 'Ligação', nota: 'Retomar a conversa', feito_em: em(-5, 9) }
+    { id: 5, lead_id: id('Elisa Prado'), quando: em(-2, 10), canal: 'WhatsApp', nota: 'Primeiro contato', feito_em: em(-2, 10, 40), resultado: 'Respondeu no WhatsApp', relato: 'Mandei as fotos do decorado. Pediu a tabela com as condições de entrada.' },
+    { id: 6, lead_id: id('Fábio Nunes'), quando: em(-6, 10), canal: 'Ligação', nota: 'Retomar a conversa', feito_em: em(-5, 9), resultado: 'Não atendeu', relato: 'Liguei duas vezes. Deixei mensagem dizendo que ligo de novo na semana que vem.' },
+    { id: 7, lead_id: id('Carla Mendes'), quando: em(-1, 15), canal: 'WhatsApp', nota: 'Mandar as plantas', feito_em: em(-1, 15, 20), resultado: 'Atendeu', relato: 'Mandei as plantas das casas de 3 quartos. Gostou da de esquina e quer saber o valor do condomínio.' }
   ].map(f => ({ ...f, criado_em: iso(agora - 8 * dia) }));
   const historico = [
     { id: 1, lead_id: id('Carla Mendes'), tipo: 'etapa', texto: 'Novo → Primeiro contato', criado_em: iso(agora - 1.5 * dia) },
     { id: 2, lead_id: id('Carla Mendes'), tipo: 'msg', texto: 'Oi Carla! Tudo bem? Vi seu interesse nas casas do condomínio. Posso te mandar as plantas?', criado_em: iso(agora - 1.5 * dia + 60000) },
-    { id: 3, lead_id: id('Carla Mendes'), tipo: 'etapa', texto: 'Primeiro contato → Respondeu', criado_em: iso(agora - 0.1 * dia) }
+    { id: 3, lead_id: id('Carla Mendes'), tipo: 'etapa', texto: 'Primeiro contato → Respondeu', criado_em: iso(agora - 0.1 * dia) },
+    { id: 4, lead_id: id('Carla Mendes'), tipo: 'ligacao', texto: 'Falei com o marido: decidem juntos e preferem visitar no sábado de manhã.', criado_em: iso(agora - 0.05 * dia) }
   ];
   return { seq: 100, leads, followups, historico, ajustes: { empreendimentos: ['Empreendimento A', 'Empreendimento B'], responsaveis: ['Ana Paula', 'Rafael'], metas: { respondeu: 50, visita_agendada: 20, venda: 5 } } };
 }
@@ -214,7 +216,14 @@ function demo(acao, x) {
   const falha = msg => { throw Object.assign(new Error(msg), { status: 400 }); };
   const lead = id => d.leads.find(l => l.id === Number(id)) || falha('Lead não encontrado. Recarregue a página.');
   const fu = id => d.followups.find(f => f.id === Number(id)) || falha('Follow-up não encontrado. Recarregue a página.');
-  const hist = (id, tipo, texto) => d.historico.push({ id: ++d.seq, lead_id: Number(id), tipo, texto, criado_em: agora });
+  const hist = (id, tipo, texto, resultado) => d.historico.push({ id: ++d.seq, lead_id: Number(id), tipo, texto, ...(resultado ? { resultado } : {}), criado_em: agora });
+  // concluir (follow-up ou visita) pede como foi e o que foi feito, como no servidor
+  const comoFoi = () => {
+    const resultado = String(x.resultado || '').trim().slice(0, 60), relato = String(x.relato || '').trim().slice(0, 4000);
+    if (!resultado) falha('Escolha como foi o contato.');
+    if (!relato) falha('Conte o que foi feito: fica registrado na ficha do lead.');
+    return { resultado, relato };
+  };
   let r = { ok: true };
   switch (acao) {
     case 'dados': return copia({ leads: d.leads.map(({ ficha, ...l }) => l).sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em)), followups: d.followups, ajustes: { ...d.ajustes, agenda: false }, usuario: { nome: 'Administrador', papel: 'admin' } });
@@ -260,16 +269,28 @@ function demo(acao, x) {
       }[c]?.() || `${ROT[c] || c}: ${v}`);
       break;
     }
-    case 'historico': lead(x.id); hist(x.id, ['msg', 'nota'].includes(x.tipo) ? x.tipo : 'nota', String(x.texto || '').slice(0, 4000)); break;
+    case 'historico': {
+      lead(x.id);
+      const t = String(x.texto || '').trim().slice(0, 4000);
+      if (!t) falha('Escreva o texto.');
+      hist(x.id, ['msg', 'nota', 'ligacao', 'whatsapp', 'visita'].includes(x.tipo) ? x.tipo : 'nota', t, String(x.resultado || '').trim().slice(0, 60));
+      break;
+    }
+    case 'visita_feita': {
+      const l = lead(x.id), { resultado, relato } = comoFoi();
+      l.visita_em = null; l.atualizado_em = agora;
+      hist(l.id, 'visita', relato, resultado);
+      break;
+    }
     case 'fu_salvar':
       if (x.id) Object.assign(fu(x.id), { quando: new Date(x.quando).toISOString(), canal: x.canal || '', nota: x.nota || '' });
       else { lead(x.lead_id); const id = ++d.seq; d.followups.push({ id, lead_id: Number(x.lead_id), quando: new Date(x.quando).toISOString(), canal: x.canal || '', nota: x.nota || '', criado_em: agora }); r = { id }; }
       break;
     case 'fu_concluir': {
-      const f = fu(x.id);
+      const f = fu(x.id), { resultado, relato } = comoFoi();
       if (!f.feito_em) {
-        f.feito_em = agora;
-        if (x.proximo) d.followups.push({ id: ++d.seq, lead_id: f.lead_id, quando: new Date(x.proximo).toISOString(), canal: f.canal, nota: 'Próximo contato', criado_em: agora });
+        Object.assign(f, { feito_em: agora, resultado, relato });
+        if (x.proximo) d.followups.push({ id: ++d.seq, lead_id: f.lead_id, quando: new Date(x.proximo).toISOString(), canal: f.canal, nota: String(x.proximo_nota || '').trim() || 'Próximo contato', criado_em: agora });
       }
       break;
     }
