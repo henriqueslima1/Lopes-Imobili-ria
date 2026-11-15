@@ -1,9 +1,9 @@
 // Follow-ups: em cima "Faça agora" (o contato mais importante agora, e por quê) e "Seu dia";
 // embaixo os contatos em lista (padrão) ou em quadro por prazo. Ações: agendar, concluir, adiar, editar, excluir
 // e agendar quem está sem próximo passo.
-let dlgAgendar, fAg, dlgConcluir, concluindo = null, fuArrastando = null;
-// Janela "Concluir follow-up": como foi e o que foi feito (obrigatórios) e, se quiser, o próximo contato (dia e hora)
-let cf = null;
+let dlgAgendar, fAg, fuArrastando = null;
+// Painel de concluir aberto (um por vez): { id, marcados, ...como foi } — ver painelFu
+let fuAb = null;
 const DIAS_SEM_FU = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 // Lista ou quadro: a escolha fica neste navegador
 const CHAVE_VISTA_FU = 'hub-crm-fu-vista';
@@ -82,7 +82,8 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
   // uma linha da lista
   const linha = (f, extra = false) => {
     const l = f.lead, [c, q, q2] = quando(f), feita = !!f.feito_em;
-    return `<li class="tarefa fu-l${feita ? ' feitas' : ''}${c === 'atr' ? ' atr' : ''}${extra ? ' extra' : ''}" data-id="${f.id}" data-busca="${busca(f, l)}">
+    const aberto = !feita && fuAb && fuAb.id === f.id;
+    return `<li class="tarefa fu-l${feita ? ' feitas' : ''}${c === 'atr' ? ' atr' : ''}${extra ? ' extra' : ''}${aberto ? ' expandida' : ''}" data-id="${f.id}" data-busca="${busca(f, l)}">
       <div class="t-fundo"><span class="sw-feito">${feita ? '' : '✓ Feito'}</span><span class="sw-botoes">${feita ? '' : '<button type="button" class="sw-adiar" data-acao="adiar">+1 dia</button>'}<button type="button" class="sw-excluir" data-acao="excluir">Excluir</button></span></div>
       <div class="t-frente">
         <button class="circulo${feita ? ' feito' : ''}" type="button" ${feita ? 'disabled' : 'data-acao="concluir"'} title="${feita ? 'Feito' : 'Marcar como feito'}" aria-label="${feita ? 'Feito' : 'Marcar como feito'}">${feita ? '✓' : ''}</button>
@@ -94,6 +95,7 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
         ${avResp(l.responsavel)}${feita ? '<span class="fz-wa vazio"></span>' : waLink(l)}
         <span class="fu-acoes">${feita ? '' : '<button type="button" class="mini" data-acao="adiar" title="Passar para amanhã">+1 dia</button>'}<button type="button" class="lixo" data-acao="excluir" title="Excluir" aria-label="Excluir">${ico('lixo')}</button></span>
       </div>
+      ${aberto ? painelFu(f) : ''}
     </li>`;
   };
   // uma linha de "Sem próximo passo": o botão marca o contato sugerido
@@ -130,13 +132,15 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
     const l = f.lead, feita = !!f.feito_em, d = atraso(f);
     const [c, q] = feita ? ['ok', hm(f.feito_em)] : d > 0 ? ['atr', 'há ' + plural(d, 'dia', 'dias')] : d === 0 ? ['hj', hm(f.quando)] : d === -1 ? ['', hm(f.quando)]
       : ['', f.quando < semana0 ? DIAS_SEM_FU[f.quando.getDay()].slice(0, 3) + ' ' + f.quando.getDate() : dm(f.quando)];
-    return `<div class="fk${c === 'atr' ? ' atr' : ''}${feita ? ' feita' : ''}${extra ? ' extra' : ''}" data-id="${f.id}" data-busca="${busca(f, l)}"${feita ? '' : ' draggable="true"'}>
+    const aberto = !feita && fuAb && fuAb.id === f.id;
+    return `<div class="fk${c === 'atr' ? ' atr' : ''}${feita ? ' feita' : ''}${extra ? ' extra' : ''}${aberto ? ' expandida' : ''}" data-id="${f.id}" data-busca="${busca(f, l)}"${feita || aberto ? '' : ' draggable="true"'}>
       <div class="fk-top"><button type="button" class="fk-lead" data-abrir-lead="${l.id}" title="Abrir a ficha">${avLead(l)}<span>${esc(l.nome || 'Sem nome')}</span></button>
         <button class="circulo${feita ? ' feito' : ''}" type="button" ${feita ? 'disabled' : 'data-acao="concluir"'} title="${feita ? 'Feito' : 'Marcar como feito'}" aria-label="${feita ? 'Feito' : 'Marcar como feito'}">${feita ? '✓' : ''}</button></div>
       <p class="fk-tt">${esc(f.nota || 'Entrar em contato')}</p>
       ${feita && (f.resultado || f.relato) ? `<p class="fk-relato">${esc([f.resultado, f.relato].filter(Boolean).join(' · '))}</p>` : ''}
       ${feita ? '' : `<div class="fk-meta">${etapaChip(l)}<span>${esc(f.canal || '')}</span>${l.valor ? `<span>${esc(moedaCurta(l.valor))}</span>` : ''}</div>`}
       <div class="fk-pe"><span class="fz ${c}">${feita ? svgFu(IC_FU.check, 13) : c === 'atr' ? ico('calendario') : ico('relogio')}${q}</span><span class="fk-pe-d">${feita ? '' : waLink(l)}${avResp(l.responsavel)}</span></div>
+      ${aberto ? painelFu(f) : ''}
     </div>`;
   };
   const coluna = (chave, titulo, corCol, lista, alvo, vazio) => {
@@ -162,6 +166,7 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
       <div class="faca-acts">${l.telefone && !l.nao_contatar ? `<a class="fb lime" href="${esc(wa(l.telefone))}" target="_blank" rel="noopener">${ico('whats')}Chamar no WhatsApp</a>` : ''}
         <button class="fb" type="button" data-acao="concluir">${svgFu(IC_FU.check, 15)}Feito</button>
         <button class="fb ghost" type="button" data-acao="adiar">Adiar para amanhã</button></div>
+      ${fuAb && fuAb.id === top.id ? painelFu(top) : ''}
     </section>`;
   })() : `<section class="faca vazio">
       <div class="faca-topo"><span class="faca-ico">${svgFu(IC_FU.check, 19)}</span><h2>Faça agora</h2></div>
@@ -225,7 +230,7 @@ registrarTela('followups', { titulo: 'Follow-ups', desenhar(main) {
 <section class="card fu-lista">
   <div class="fu-hdr">
     <div><h2>${concluidas ? 'Concluídos nos últimos 30 dias' : 'Follow-ups'}</h2>
-      <p>${concluidas ? `<a href="${esc('followups.html' + (resp ? '?resp=' + encodeURIComponent(resp) : ''))}">← Voltar para a agenda</a>` : vista === 'quadro' ? 'Arraste o cartão para remarcar o contato ou para "Feitos hoje".' : 'Atrasados primeiro, depois hoje e os próximos dias. Toque no círculo para marcar como feito.'}</p></div>
+      <p>${concluidas ? `<a href="${esc('followups.html' + (resp ? '?resp=' + encodeURIComponent(resp) : ''))}">← Voltar para a agenda</a>` : vista === 'quadro' ? 'Arraste o cartão para remarcar o contato ou para "Feitos hoje".' : 'Atrasados primeiro, depois hoje e os próximos dias. Toque na tarefa para registrar como foi e concluir.'}</p></div>
     <div class="fu-tools">
       <label class="busca">${ico('busca')}<input id="filtro-busca" placeholder="Buscar lead ou tarefa" aria-label="Buscar lead ou tarefa" autocomplete="off"></label>
       ${concluidas ? '' : `<nav class="seg fu-vista" aria-label="Ver como"><button type="button" data-vista-fu="lista" class="${vista === 'lista' ? 'on' : ''}" aria-pressed="${vista === 'lista'}">${svgFu(IC_FU.lista, 15)}Lista</button><button type="button" data-vista-fu="quadro" class="${vista === 'quadro' ? 'on' : ''}" aria-pressed="${vista === 'quadro'}">${ico('quadro')}Quadro</button></nav>
@@ -275,8 +280,8 @@ function montarJanelasFu() {
     </div>
   </form>
 </dialog>
-<dialog id="dlg-concluir" class="dlg-concluir" aria-labelledby="cf-titulo"><div id="cf-corpo"></div></dialog>`);
-  dlgAgendar = $('#dlg-agendar'); fAg = $('#form-agendar'); dlgConcluir = $('#dlg-concluir');
+`);
+  dlgAgendar = $('#dlg-agendar'); fAg = $('#form-agendar');
   ligarAcoes();
 }
 
@@ -352,6 +357,16 @@ function ligarAcoes() {
 
   document.addEventListener('click', async e => {
     if (telaAtual !== 'followups' || !e.target.closest('#tela')) return;
+    // dentro do painel de concluir
+    const painel = e.target.closest('.fu-painel');
+    if (painel) {
+      if (e.target.closest('[data-abrir-lead]') || !fuAb) return; // a ficha abre pelo lead.js
+      if (e.target.closest('[data-cc-editar]')) { const it = painel.parentElement; fecharPainel(); abrirEditar(it); return; }
+      const r = ccClique(e, fuAb, redesenharPainel);
+      if (r === 'cancelar') fecharPainel();
+      else if (r === 'salvar') salvarPainel(e.target.closest('button'), painel.parentElement);
+      return;
+    }
     // lista ou quadro
     const v = e.target.closest('[data-vista-fu]');
     if (v) { try { localStorage.setItem(CHAVE_VISTA_FU, v.dataset.vistaFu); } catch (x) {} mostrar({ quieto: true }); return; }
@@ -371,7 +386,7 @@ function ligarAcoes() {
     const b = e.target.closest('[data-acao]');
     if (b) {
       const item = itemFu(b), a = b.dataset.acao;
-      if (a === 'concluir') { abrirConcluir(item); return; }
+      if (a === 'concluir') { abrirPainel(item); return; }
       if (a === 'excluir' && !confirm('Excluir este follow-up?')) return;
       b.disabled = true;
       try {
@@ -388,16 +403,16 @@ function ligarAcoes() {
       return;
     }
     if (e.target.closest('a, button, input, select, label')) return;
-    // tocar na linha ou no cartão (fora dos botões) abre a edição; em "Sem próximo passo", o agendamento
+    // tocar na linha ou no cartão (fora dos botões) abre o painel de concluir; em "Sem próximo passo", o agendamento
     const li = e.target.closest('.tarefa');
     if (li) {
       if (li.classList.contains('aberta') || Date.now() - (li._deslizou || 0) < 400) return;
       if (li.classList.contains('sug')) { const l = CRM.porId.get(Number(li.dataset.lead)); if (l) abrirAgendar({ rotulo: rotuloLead(l), nota: li.dataset.nota }); return; }
-      if (!li.classList.contains('feitas')) abrirEditar(li);
+      if (!li.classList.contains('feitas')) abrirPainel(li);
       return;
     }
     const card = e.target.closest('.fk:not(.feita)');
-    if (card) abrirEditar(card);
+    if (card) abrirPainel(card);
   });
 
   // quadro: arrastar o cartão para outra coluna remarca (ou marca como feito)
@@ -421,91 +436,66 @@ function ligarAcoes() {
     e.preventDefault();
     const card = fuArrastando, alvo = col.dataset.alvo;
     col.classList.remove('alvo');
-    if (alvo === 'feitos') { abrirConcluir(card); return; }
+    if (alvo === 'feitos') { abrirPainel(card); return; }
     remarcarFu(card.dataset.id, { hoje: 0, amanha: 1, proximos: 2 }[alvo]);
   });
 
-  // "Concluir follow-up": escolhas redesenham a janela; o que se digita fica guardado em cf
-  dlgConcluir.addEventListener('click', e => {
-    if (e.target === dlgConcluir) { dlgConcluir.close(); return; }
-    if (!cf) return;
-    if (e.target.closest('.cf-quando') && quandoClique(e, cf.q, desenharConcluir)) return;
-    const r = e.target.closest('[data-res]');
-    if (r) { cf.res = cf.res === r.dataset.res ? '' : r.dataset.res; desenharConcluir(); return; }
-    const a = e.target.closest('[data-cf]')?.dataset.cf;
-    if (a === 'fechar') dlgConcluir.close();
-    else if (a === 'sem-prox') { cf.q.data = null; desenharConcluir(); }
-    else if (a === 'salvar') salvarConcluir(e.target.closest('button'));
-  });
-  dlgConcluir.addEventListener('input', e => {
-    if (!cf) return;
-    if (e.target.id === 'cf-relato') { cf.relato = e.target.value; atualizarBotaoConcluir(); }
-    if (e.target.id === 'cf-nota') cf.nota = e.target.value;
-  });
+  // painel de concluir: o que se digita fica guardado em fuAb; Esc fecha
+  document.addEventListener('input', e => { if (fuAb && e.target.closest('.fu-painel')) ccInput(e, fuAb); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && e.target.closest?.('.fu-painel')) { e.preventDefault(); fecharPainel(); } });
 }
 
-function abrirConcluir(item) {
+// ---------- Concluir ali mesmo: o painel abre dentro da linha, do cartão ou do "Faça agora" ----------
+// Mostra a tarefa, o último contato e as observações do lead; pede como foi e o que foi feito; o próximo follow-up é opcional.
+function painelFu(f) {
+  const l = f.lead;
+  const ultimo = CRM.followups.filter(x => x.lead_id === l.id && x.feito_em && x.id !== f.id).sort((a, b) => b.feito_em - a.feito_em)[0];
+  return `<div class="fu-painel" data-painel="${f.id}">
+    <div class="fu-ctx">
+      <div class="fu-ctx-t"><small>Tarefa</small><b>${esc(f.nota || 'Entrar em contato')}</b><span>${esc(f.canal || 'Contato')} · marcado para ${esc(fuQuando(f.quando).toLowerCase())}</span></div>
+      ${ultimo ? `<div class="fu-ctx-u"><small>Último contato · ${esc(quandoFeito(ultimo.feito_em))}</small><p>${esc([ultimo.resultado, ultimo.relato || ultimo.nota].filter(Boolean).join(' · '))}</p></div>` : ''}
+      ${l.notas ? `<div class="fu-ctx-obs"><small>Observações do lead</small><p>${esc(l.notas)}</p></div>` : ''}
+      <div class="fu-ctx-b"><button type="button" class="mini" data-abrir-lead="${l.id}">Abrir ficha</button><button type="button" class="mini" data-cc-editar>Editar tarefa</button></div>
+    </div>
+    <div class="cc">${ccHtml(fuAb, fuAb.marcados)}</div>
+  </div>`;
+}
+function abrirPainel(item) {
   const f = fuDe(item?.dataset.id);
   if (!f || f.feito_em) return;
-  concluindo = item;
-  cf = { f, res: '', relato: '', nota: '', q: { data: null } };
-  desenharConcluir();
-  dlgConcluir.showModal();
-  setTimeout(() => $('#cf-titulo')?.focus(), 50);
-}
-const avisoConcluir = () => !cf.res ? 'Escolha como foi.' : !cf.relato.trim() ? 'Escreva o que foi feito.' : '';
-function atualizarBotaoConcluir() {
-  const b = $('#cf-salvar'), av = $('#cf-aviso');
-  if (b) b.disabled = !(cf.res && cf.relato.trim());
-  if (av) av.textContent = avisoConcluir();
-}
-function desenharConcluir() {
-  const f = cf.f, l = f.lead, regra = FU_REGRAS[l.etapa];
+  if (fuAb && fuAb.id === f.id) { fecharPainel(); return; } // tocar de novo fecha
+  fecharPainel();
   // dias que já têm algo marcado com esse lead (outros follow-ups e a visita) ganham um pontinho
-  const marcados = new Set(CRM.followups.filter(x => x.lead_id === l.id && !x.feito_em && x.id !== f.id).map(x => diaLocal(x.quando)));
-  if (l.visita_em) marcados.add(diaLocal(l.visita_em));
-  const foco = document.activeElement?.id;
-  $('#cf-corpo').innerHTML = `
-    <div class="cf-cab">
-      <div><h3 id="cf-titulo" tabindex="-1">Concluir follow-up</h3>
-        <p class="cf-sub"><b>${esc(l.nome || 'Sem nome')}</b> · ${esc(nomeEtapa(l.etapa))} · marcado para ${esc(fuQuando(f.quando).toLowerCase())}</p></div>
-      <button type="button" class="cf-x" data-cf="fechar" aria-label="Fechar">×</button>
-    </div>
-    <div class="cf-tarefa"><span>${ico('relogio')}</span><div><small>Tarefa</small><b>${esc(f.nota || 'Entrar em contato')}</b></div></div>
-    <div class="cf-grupo">
-      <span class="cf-lb">Como foi?<em>obrigatório</em></span>
-      <div class="fl-res">${RES_FU.map(o => `<button type="button" class="fl-res-b${cf.res === o ? ' on' : ''}" data-res="${esc(o)}" aria-pressed="${cf.res === o}">${esc(o)}</button>`).join('')}</div>
-    </div>
-    <div class="cf-grupo">
-      <label class="cf-lb" for="cf-relato">O que foi feito?<em>obrigatório</em></label>
-      <textarea id="cf-relato" rows="3" placeholder="Ex.: mandei as 3 opções, gostou da 2ª e quer visitar sábado de manhã.">${esc(cf.relato)}</textarea>
-      <small class="cf-hint">Fica registrado na ficha do lead, em Feito, com a data e a hora.</small>
-    </div>
-    <div class="cf-grupo">
-      <span class="cf-lb">Próximo contato<em>escolha o dia e o horário</em></span>
-      <div class="cf-quando">${quandoHtml(cf.q, marcados)}</div>
-      ${cf.q.data ? `<div class="cf-prox"><input id="cf-nota" aria-label="O que fazer no próximo contato" placeholder="O que fazer? (ex.: ${esc((regra?.[1] || 'retomar a conversa').toLowerCase())})" value="${esc(cf.nota)}"><button type="button" class="lnk" data-cf="sem-prox">não marcar</button></div>`
-        : '<small class="cf-hint">Sem próximo contato, o lead entra em "Sem próximo passo".</small>'}
-    </div>
-    <div class="cf-pe">
-      <span id="cf-aviso">${avisoConcluir()}</span>
-      <button type="button" class="btn-borda" data-cf="fechar">Cancelar</button>
-      <button type="button" class="btn" id="cf-salvar" data-cf="salvar" ${cf.res && cf.relato.trim() ? '' : 'disabled'}>${svgFu(IC_FU.check, 15)}${cf.q.data ? 'Concluir e agendar · ' + esc(rotuloQuando(cf.q.data)) : 'Concluir e registrar'}</button>
-    </div>`;
-  if (foco === 'cf-relato' || foco === 'cf-nota') $('#' + foco)?.focus();
+  const marcados = new Set(CRM.followups.filter(x => x.lead_id === f.lead_id && !x.feito_em && x.id !== f.id).map(x => diaLocal(x.quando)));
+  if (f.lead.visita_em) marcados.add(diaLocal(f.lead.visita_em));
+  fuAb = { id: f.id, marcados, ...novoConc('fu', f.lead.etapa) };
+  item.classList.add('expandida');
+  if (item.matches('.fk')) item.draggable = false;
+  item.insertAdjacentHTML('beforeend', painelFu(f));
+  const p = item.querySelector('.fu-painel');
+  p.querySelector('.cc-relato')?.focus({ preventScroll: true });
+  p.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
-async function salvarConcluir(b) {
-  if (!cf || !cf.res || !cf.relato.trim()) return;
-  const d = cf.q.data, f = cf.f;
-  if (d && d < new Date(Date.now() - 5 * 60000)) { alert('O horário do próximo contato já passou. Escolha outro.'); return; }
+function fecharPainel() {
+  $$('.fu-painel').forEach(p => {
+    const it = p.parentElement;
+    it.classList.remove('expandida');
+    if (it.matches('.fk:not(.feita)')) it.draggable = true;
+    p.remove();
+  });
+  fuAb = null;
+}
+const redesenharPainel = () => { const c = $('.fu-painel .cc'); if (c && fuAb) c.innerHTML = ccHtml(fuAb, fuAb.marcados); };
+async function salvarPainel(b, item) {
+  if (!fuAb) return;
+  const f = fuDe(fuAb.id);
+  if (!f) return;
   b.disabled = true;
-  try {
-    await enviar('fu_concluir', { id: f.id, resultado: cf.res, relato: cf.relato.trim(), proximo: d ? d.toISOString() : '',
-      proximo_nota: cf.nota.trim() || FU_REGRAS[f.lead.etapa]?.[1] || '' });
-  } catch (e) { b.disabled = false; return; }
-  window.aviso?.(d ? 'Feito ✓ · próximo contato ' + rotuloQuando(d) : 'Feito ✓ · registrado na ficha');
-  dlgConcluir.close();
-  sairEAtualizar(concluindo?.classList.contains('faca') ? null : concluindo);
+  let r;
+  try { r = await ccSalvar(fuAb, { fuId: f.id, leadId: f.lead_id }); } catch (e) { b.disabled = false; return; }
+  if (r === false) { b.disabled = false; return; }
+  fuAb = null;
+  sairEAtualizar(item.classList.contains('faca') ? null : item);
 }
 
 // Busca na hora, sem redesenhar: esconde linhas e cartões que não batem (e os grupos que ficarem vazios)

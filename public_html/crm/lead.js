@@ -288,6 +288,69 @@ const linhaFeito = r => `<li class="fl-r${r.marco ? ' marco' : ''}">
     ${r.tarefa ? `<p class="fl-r-tarefa">Tarefa: ${esc(r.tarefa)}</p>` : ''}${r.texto ? `<p>${esc(r.texto)}</p>` : ''}
   </li>`;
 
+// ---------- Concluir na hora (ficha e tela de Follow-ups, sem abrir outra janela) ----------
+// Como foi e o que foi feito (obrigatórios) e, se quiser, o próximo follow-up com dia e horário.
+// st = { tipo: 'fu' | 'visita', res, relato, prox (marcar o próximo?), q: { data }, nota, etapa }
+function novoConc(tipo, etapa) {
+  const regra = FU_REGRAS[etapa];
+  return { tipo, etapa, res: '', relato: '', prox: false, nota: '', q: { data: daqui(regra && regra[0] > 1 ? regra[0] : 1, 10) } };
+}
+const ccPronto = st => !!(st.res && st.relato.trim());
+const ccAviso = st => !st.res ? 'Escolha como foi.' : !st.relato.trim() ? 'Escreva o que foi feito.' : st.prox ? '' : 'Sem próximo follow-up, o lead vai para "Sem próximo passo".';
+const ccBotao = st => 'Concluir' + (st.prox && st.q.data ? ' e agendar · ' + rotuloQuando(st.q.data) : '');
+function ccHtml(st, marcados = new Set()) {
+  const ops = st.tipo === 'visita' ? RES_VISITA : RES_FU, dica = FU_REGRAS[st.etapa]?.[1] || 'retomar a conversa';
+  return `<div class="cc-l"><span class="cc-lb">Como foi?</span>
+      <div class="fl-res">${ops.map(o => `<button type="button" class="fl-res-b${st.res === o ? ' on' : ''}" data-cc-res="${esc(o)}" aria-pressed="${st.res === o}">${esc(o)}</button>`).join('')}</div></div>
+    <textarea class="cc-relato" rows="2" aria-label="O que foi feito" placeholder="O que foi feito? Ex.: mandei as 3 opções, gostou da 2ª e quer visitar sábado.">${esc(st.relato)}</textarea>
+    ${st.prox ? `<div class="cc-prox">
+        <div class="cc-prox-cab"><span class="cc-lb">Próximo follow-up</span><button type="button" class="lnk" data-cc="sem-prox">não marcar</button></div>
+        <div class="cc-quando">${quandoHtml(st.q, marcados)}</div>
+        <input class="cc-nota" aria-label="O que fazer no próximo follow-up" placeholder="O que fazer? (ex.: ${esc(dica.toLowerCase())})" value="${esc(st.nota)}">
+      </div>` : '<button type="button" class="cc-add" data-cc="prox">+ Marcar próximo follow-up</button>'}
+    <div class="cc-pe"><span class="cc-aviso">${esc(ccAviso(st))}</span>
+      <button type="button" class="mini" data-cc="cancelar">Cancelar</button>
+      <button type="button" class="btn cc-ok" data-cc="salvar" ${ccPronto(st) ? '' : 'disabled'}>${svgL(IC_L.check, 'ico ico-s')}${esc(ccBotao(st))}</button></div>`;
+}
+// Clique dentro do painel: muda st e redesenha; devolve 'cancelar' ou 'salvar' para quem chamou (ou true se tratou, false se não era dele)
+function ccClique(e, st, redesenhar) {
+  if (e.target.closest('.cc-quando') && quandoClique(e, st.q, redesenhar)) return true;
+  const r = e.target.closest('[data-cc-res]');
+  if (r) {
+    st.res = st.res === r.dataset.ccRes ? '' : r.dataset.ccRes;
+    if (['Pediu para remarcar', 'Remarcou'].includes(st.res)) st.prox = true; // remarcar já pede a data
+    redesenhar(); return true;
+  }
+  const a = e.target.closest('[data-cc]')?.dataset.cc;
+  if (a === 'prox' || a === 'sem-prox') { st.prox = a === 'prox'; redesenhar(); if (st.prox) e.target.closest('.cc')?.querySelector('.cc-quando')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return true; }
+  return a === 'cancelar' || a === 'salvar' ? a : false;
+}
+// Digitação: guarda em st e liga o botão sem redesenhar (o cursor não pula)
+function ccInput(e, st) {
+  const caixa = e.target.closest('.cc');
+  if (!caixa) return false;
+  if (e.target.matches('.cc-relato')) st.relato = e.target.value;
+  else if (e.target.matches('.cc-nota')) st.nota = e.target.value;
+  else return false;
+  caixa.querySelector('.cc-ok').disabled = !ccPronto(st);
+  caixa.querySelector('.cc-aviso').textContent = ccAviso(st);
+  return true;
+}
+// Grava: conclui (follow-up ou visita) e, se marcado, agenda o próximo. Devolve a data do próximo (ou null); erro = já avisado
+async function ccSalvar(st, { fuId, leadId }) {
+  if (!ccPronto(st)) return false;
+  const d = st.prox ? st.q.data : null;
+  if (st.prox && !d) { alert('Escolha o dia do próximo follow-up (ou toque em "não marcar").'); return false; }
+  if (d && d < new Date(Date.now() - 5 * 60000)) { alert('O horário do próximo follow-up já passou. Escolha outro.'); return false; }
+  const corpo = { resultado: st.res, relato: st.relato.trim() }, nota = st.nota.trim() || FU_REGRAS[st.etapa]?.[1] || 'Entrar em contato';
+  if (st.tipo === 'visita') {
+    await enviar('visita_feita', { id: leadId, ...corpo });
+    if (d) await enviar('fu_salvar', { lead_id: leadId, quando: d.toISOString(), canal: 'WhatsApp', nota });
+  } else await enviar('fu_concluir', { id: fuId, ...corpo, proximo: d ? d.toISOString() : '', proximo_nota: d ? nota : '' });
+  window.aviso?.(d ? 'Concluído ✓ · próximo follow-up ' + rotuloQuando(d) : 'Concluído ✓ · registrado');
+  return d || null;
+}
+
 // ---------- Desenho da ficha ----------
 const svgL = (d, cls = 'ico') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const IC_L = {
@@ -464,22 +527,16 @@ function resumo(l) {
 
 // Uma linha de "Agendado" e, se for a que está sendo concluída, o "Como foi?"
 function itemAgendado(it, i) {
-  const abrindo = flConc && flConc.chave === it.chave, ops = it.tipo === 'visita' ? RES_VISITA : RES_FU;
+  const abrindo = flConc && flConc.chave === it.chave;
   const rot = it.atrasado ? 'Atrasado · ' + dm(it.quando) + ' ' + hm(it.quando) : fuQuando(it.quando);
-  return `<div class="fl-item${i === 0 ? ' primeiro' : ''}${it.atrasado ? ' atrasado' : ''}">
+  return `<div class="fl-item${i === 0 ? ' primeiro' : ''}${it.atrasado ? ' atrasado' : ''}${abrindo ? ' aberto' : ''}" data-abrir-item="${it.chave}" title="${abrindo ? '' : 'Concluir: registrar como foi'}">
       <span class="fl-roda">${it.tipo === 'visita' ? svgL(IC_L.casa) : ico('relogio')}</span>
       <div class="fl-item-tx"><div><b>${esc(rot)}</b><small>${it.tipo === 'visita' ? 'Visita' : 'Follow-up' + (it.canal ? ' · ' + esc(it.canal) : '')}</small></div><p>${esc(it.texto)}</p></div>
       ${abrindo ? '' : `<button class="mini" data-acao="remarcar" data-item="${it.chave}">Remarcar</button>
       <button class="mini ok" data-acao="concluir" data-item="${it.chave}">${svgL(IC_L.check, 'ico ico-s')}Feito</button>`}
     </div>
-    ${abrindo ? `<div class="fl-feito" data-item="${it.chave}">
-      <b>Como foi?</b>
-      <div class="fl-res">${ops.map(o => `<button type="button" class="fl-res-b${flConc.res === o ? ' on' : ''}" data-res="${esc(o)}" aria-pressed="${flConc.res === o}">${esc(o)}</button>`).join('')}</div>
-      <textarea id="fl-relato" rows="2" aria-label="O que foi feito" placeholder="O que foi feito? Ex.: mandei as 3 opções, gostou da 2ª e quer visitar sábado.">${esc(flConc.relato)}</textarea>
-      <div class="fl-feito-pe"><span id="fl-feito-aviso">${avisoConc()}</span><button class="mini" data-acao="cancelar-feito">Cancelar</button><button class="mini ok" data-acao="salvar-feito" ${flConc.res && flConc.relato.trim() ? '' : 'disabled'}>Salvar no registro</button></div>
-    </div>` : ''}`;
+    ${abrindo ? `<div class="fl-feito cc">${ccHtml(flConc, new Set(agendados().map(x => diaLocal(x.quando))))}</div>` : ''}`;
 }
-const avisoConc = () => !flConc.res ? 'Escolha como foi.' : !flConc.relato.trim() ? 'Escreva o que foi feito.' : 'Fica em Feito, com a data e a hora de agora.';
 
 function agendarHtml(itens) {
   const a = flAg, visita = a.tipo === 'visita', d = a.q.data;
@@ -585,13 +642,30 @@ async function salvarObs() {
   if (st) st.textContent = 'Salvo ✓';
 }
 
-// Mostra o "Como foi?" atualizado sem redesenhar (o texto digitado não se perde)
-function atualizarConc() {
+// Redesenha só o painel de concluir (o resto da ficha fica como está)
+function redesenharConc() {
   const caixa = fichaC.querySelector('.fl-feito');
-  if (!caixa || !flConc) return;
-  caixa.querySelectorAll('[data-res]').forEach(b => { const on = b.dataset.res === flConc.res; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-  caixa.querySelector('[data-acao="salvar-feito"]').disabled = !(flConc.res && flConc.relato.trim());
-  caixa.querySelector('#fl-feito-aviso').textContent = avisoConc();
+  if (!caixa || !flConc) return desenhar();
+  caixa.innerHTML = ccHtml(flConc, new Set(agendados().map(x => diaLocal(x.quando))));
+}
+function abrirConc(chave) {
+  const it = agendados().find(x => x.chave === chave);
+  if (!it) return;
+  flConc = { chave, ...novoConc(it.tipo, atual.lead.etapa) };
+  desenhar();
+  fichaC.querySelector('.fl-feito .cc-relato')?.focus({ preventScroll: true });
+  fichaC.querySelector('.fl-feito')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+async function salvarConc(botao) {
+  const l = atual.lead, c = flConc;
+  if (!c) return;
+  botao.disabled = true;
+  try {
+    const r = await ccSalvar(c, { fuId: c.chave.startsWith('fu:') ? Number(c.chave.slice(3)) : null, leadId: l.id });
+    if (r === false) { botao.disabled = false; return; }
+  } catch (x) { botao.disabled = false; return; }
+  flConc = null; flModo = 'agendar'; flAg = null;
+  await recarregarFicha();
 }
 const redesenharAgenda = () => {
   const q = fichaC.querySelector('.ag-quando'), btn = fichaC.querySelector('[data-acao="agendar"]');
@@ -607,14 +681,22 @@ async function cliqueFicha(e) {
   // fora do menu "⋯": fecha o menu
   if (flMenu && !e.target.closest('.fl-mais')) { flMenu = false; fichaC.querySelector('.fl-menu')?.setAttribute('hidden', ''); }
   if (flAg && fichaC.querySelector('.ag-quando')?.contains(e.target) && quandoClique(e, flAg.q, redesenharAgenda)) return;
-  const el = e.target.closest('[data-acao], [data-etapa], [data-aba], [data-modo], [data-ag-tipo], [data-reg-tipo], [data-res]');
+  if (flConc && e.target.closest('.fl-feito')) {
+    const r = ccClique(e, flConc, redesenharConc);
+    if (r === 'cancelar') { flConc = null; desenhar(); }
+    else if (r === 'salvar') { try { await salvarConc(e.target.closest('button')); } catch (x) {} }
+    return;
+  }
+  // tocar no agendado (fora dos botões) abre o concluir ali mesmo
+  const linhaAg = e.target.closest('[data-abrir-item]');
+  if (linhaAg && !e.target.closest('button, a') && !linhaAg.classList.contains('aberto')) { abrirConc(linhaAg.dataset.abrirItem); return; }
+  const el = e.target.closest('[data-acao], [data-etapa], [data-aba], [data-modo], [data-ag-tipo], [data-reg-tipo]');
   if (!el) return;
   const l = atual.lead, ds = el.dataset;
   if (ds.aba) { aba = ds.aba; flTopo = true; desenhar(); return; }
   if (ds.modo) { flModo = ds.modo; desenhar(); return; }
   if (ds.agTipo) { flAg.tipo = ds.agTipo; desenhar(); return; }
   if (ds.regTipo) { flReg.tipo = ds.regTipo; const t = $('#reg-texto'); if (t) flReg.texto = t.value; desenhar(); $('#reg-texto')?.focus(); return; }
-  if (ds.res) { flConc.res = flConc.res === ds.res ? '' : ds.res; atualizarConc(); return; }
   try {
     if (ds.etapa) {
       if (ds.etapa === l.etapa) return;
@@ -638,20 +720,7 @@ async function cliqueFicha(e) {
         await enviar('lead_excluir', { id: l.id }); mudou = true; ficha.close(); break;
 
       // concluir um agendado: abre o "Como foi?"
-      case 'concluir': flConc = { chave: ds.item, res: '', relato: '' }; desenhar(); $('#fl-relato')?.focus({ preventScroll: true }); break;
-      case 'cancelar-feito': flConc = null; desenhar(); break;
-      case 'salvar-feito': {
-        if (!flConc || !flConc.res || !flConc.relato.trim()) return;
-        const corpo = { resultado: flConc.res, relato: flConc.relato.trim() };
-        el.disabled = true;
-        try {
-          if (flConc.chave === 'visita') await enviar('visita_feita', { id: l.id, ...corpo });
-          else await enviar('fu_concluir', { id: Number(flConc.chave.split(':')[1]), ...corpo });
-        } catch (x) { el.disabled = false; return; }
-        window.aviso?.('Registrado em Feito ✓');
-        flConc = null; flModo = 'agendar'; flAg = null;
-        await recarregarFicha(); break;
-      }
+      case 'concluir': abrirConc(ds.item); break;
       // remarcar: o seletor de dia e hora já vem com o que estava marcado
       case 'remarcar': {
         const it = agendados().find(x => x.chave === ds.item);
@@ -772,8 +841,8 @@ quandoPronto(() => {
   // o que se digita no "Como foi?", no agendar e no registrar sobrevive aos redesenhos
   fichaC.addEventListener('input', e => {
     const id = e.target.id;
-    if (id === 'fl-relato' && flConc) { flConc.relato = e.target.value; atualizarConc(); }
-    else if (id === 'ag-nota' && flAg) flAg.nota = e.target.value;
+    if (flConc && ccInput(e, flConc)) return;
+    if (id === 'ag-nota' && flAg) flAg.nota = e.target.value;
     else if (id === 'reg-texto' && flReg) flReg.texto = e.target.value;
     else if (id === 'fl-obs') { const st = $('#fl-obs-st'); if (st) st.textContent = 'salva ao sair do campo'; }
   });

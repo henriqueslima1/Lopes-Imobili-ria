@@ -568,7 +568,7 @@ function marcarAtualizado() {
 // Não redesenha no meio de algo: janela aberta, texto sendo digitado, card sendo arrastado, leads marcados
 function ocupado() {
   const a = document.activeElement;
-  return !!$('dialog[open]') || !!$('.tarefa.aberta') || !!$('.sel:checked') || !!window.ocupadoTela?.() ||
+  return !!$('dialog[open]') || !!$('.tarefa.aberta') || !!$('.fu-painel') || !!$('.sel:checked') || !!window.ocupadoTela?.() ||
     !!(a && a.matches('input:not([type=hidden]):not([type=checkbox]), textarea') && a.value !== '' && !a.matches('[data-busca-viva]'));
 }
 async function atualizarSozinho() {
