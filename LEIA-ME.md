@@ -32,8 +32,13 @@ tema claro/escuro e o menu da conta (trocar a senha e sair).
 
 ## Ficha do lead e follow-ups
 
-- A ficha do lead tem observações fixas no topo e o "Acompanhamento": o que está agendado, agendar follow-up
-  ou visita (escolhendo o dia e o horário), registrar ligação/WhatsApp/visita/anotação e a lista **Feito**.
+- A ficha do lead tem o campo **Observação** logo abaixo do cabeçalho (todo mundo vê, salva ao sair do campo) e as abas:
+  - **Follow-up** (abre nela): o próximo follow-up em destaque (Concluir / Remarcar), os outros agendados,
+    agendar outro e os follow-ups feitos.
+  - **Visita**: a visita marcada (Visita feita / Remarcar / Desmarcar) ou marcar uma; e as visitas feitas.
+  - **Qualificação**: interesse e ficha de qualificação.
+  - **Histórico**: de onde veio, registrar um contato fora do agendado (ligação/WhatsApp/visita/anotação) e tudo
+    o que aconteceu com o lead.
 - Concluir um follow-up (na ficha ou na tela de Follow-ups) sempre pede **como foi** e **o que foi feito**.
   Fica registrado com a data, a hora e **quem concluiu** (o colaborador logado).
 - Na tela de Follow-ups, ao concluir, dá para já marcar o próximo contato escolhendo o dia e o horário.

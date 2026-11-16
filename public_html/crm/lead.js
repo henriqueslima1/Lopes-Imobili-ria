@@ -1,10 +1,10 @@
 // Ficha do lead: a janela que abre ao clicar num lead (CRM e página Leads) e a janela de novo/editar lead
 let ficha, fichaC, modal, form;
 let atual = null;       // dados do lead aberto (lead, followups, historico)
-let aba = 'resumo';
+let aba = 'fu';
 let mudou = false;      // se algo mudou, a página recarrega ao fechar a ficha
 let modelo = 0;         // qual sugestão de mensagem mostrar
-// (o estado do "Acompanhamento" — agendar, concluir, registrar — fica em flModo, flAg, flConc e flReg, mais abaixo)
+// (o estado de agendar, concluir e registrar fica em flAg, flAgAberto, flConc e flReg, mais abaixo)
 
 // Muda a etapa (o servidor registra "Novo → Respondeu" no histórico)
 // Virou venda: pergunta o valor e o corretor (é daqui que sai "quanto cada corretor vendeu" no hub).
@@ -64,7 +64,7 @@ async function abrirLead(id) {
   }
   const novo = String(atual?.lead.id) !== String(id);
   atual = decorar(r);
-  if (novo) { aba = 'resumo'; modelo = 0; flZerar(); flTopo = true; }
+  if (novo) { aba = 'fu'; modelo = 0; flZerar(); flTopo = 'tudo'; }
   desenhar();
   if (!ficha.open) { ficha.showModal(); rolarFicha(); }
 }
@@ -378,16 +378,16 @@ const CHAVES_QUALI = [['Finalidade', f => f.finalidade], ['Tipo de imóvel', f =
   ['Prazo', f => f.prazo], ['Quem decide', f => f.decide], ['Imóvel atual', f => f.imovel_atual]];
 
 // O que fica entre um desenho e outro da ficha (zera ao abrir outro lead)
-let flModo = 'agendar', flAg = null, flConc = null, flReg = null, flMenu = false, flTopo = false;
+let flAgAberto = false, flAg = null, flConc = null, flReg = null, flMenu = false, flTopo = false;
 // Agendar começa no dia sugerido pela etapa (ex.: "Respondeu" → hoje, na próxima hora; depois das 19h vai para amanhã)
-function novoAg() {
-  const regra = FU_REGRAS[atual?.lead.etapa];
+function novoAg(tipo = 'fu') {
+  const regra = tipo === 'fu' ? FU_REGRAS[atual?.lead.etapa] : null;
   let d = regra ? daqui(regra[0], 10) : daqui(1, 10);
   if (regra && regra[0] === 0) { d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0); if (d.getHours() > 19 || d.getHours() < 8) d = daqui(1, 10); }
-  return { tipo: 'fu', q: { data: d }, nota: '', remarcando: null };
+  return { tipo, q: { data: d }, nota: '', remarcando: null };
 }
 function flZerar() {
-  flModo = 'agendar'; flAg = novoAg();
+  flAgAberto = false; flAg = novoAg();
   flConc = null; flReg = { tipo: 'ligacao', texto: '' }; flMenu = false;
 }
 
@@ -405,18 +405,28 @@ function feitos() {
   const hs = atual.historico.filter(h => TIPO_REG[h.tipo]).map(h => ({ quando: new Date(h.criado_em), tipo: TIPO_REG[h.tipo], resultado: h.resultado, autor: h.autor, texto: h.texto }));
   return [...fus, ...hs].sort((a, b) => b.quando - a.quando);
 }
+// dias que já têm algo marcado (pontinho no seletor de dia)
+const diasMarcados = () => new Set(agendados().map(x => diaLocal(x.quando)));
+const comValor = (lista, v) => v && !lista.includes(v) ? [...lista, v] : lista; // não perde um valor que não está na lista
+const ABAS_FICHA = ['fu', 'visita', 'quali', 'historico'];
 
 function desenhar() {
-  if (!flAg) flAg = novoAg(); // depois de agendar, a sugestão segue a etapa nova
+  if (!ABAS_FICHA.includes(aba)) aba = 'fu';
+  const tipoAg = aba === 'visita' ? 'visita' : 'fu';
+  if (!flAg || flAg.tipo !== tipoAg) flAg = novoAg(tipoAg); // depois de agendar, a sugestão segue a etapa nova
   const l = atual.lead;
   const ficha = lerFicha(l);
   const msgs = atual.historico.filter(h => h.tipo === 'msg').reverse();
   const posCaminho = CAMINHO.indexOf(l.etapa);
   const fechado = GANHOS.includes(l.etapa) ? 'ganho' : (PERDIDOS.includes(l.etapa) ? 'perdido' : '');
   const podeEnviar = !!l.wa && !l.nao_contatar;
-  // redesenhar não pode jogar a pessoa para o topo (só ao abrir outro lead)
-  const y = flTopo ? [0, 0] : [fichaC.querySelector('.fl-esq')?.scrollTop || 0, fichaC.querySelector('.fl-corpo')?.scrollTop || 0];
+  // redesenhar não pode jogar a pessoa para o topo (só ao abrir outro lead; trocar de aba volta ao topo da aba)
+  const y = [fichaC.querySelector('.fl-esq')?.scrollTop || 0, fichaC.querySelector('.fl-corpo')?.scrollTop || 0, fichaC.scrollTop];
+  if (flTopo) { y[0] = 0; y[1] = 0; }
+  if (flTopo === 'tudo') y[2] = 0;
   flTopo = false;
+  const pend = agendados(), fusAbertos = pend.filter(it => it.tipo === 'fu');
+  const abas = [['fu', 'Follow-up', fusAbertos.length, fusAbertos.some(it => it.atrasado)], ['visita', 'Visita', l.visita_em ? 1 : 0], ['quali', 'Qualificação'], ['historico', 'Histórico']];
   const pill = (rotulo, campo, html, corDot) => `<label class="fl-pill"><span>${rotulo}</span>${corDot ? `<i style="background:${corDot}"></i>` : ''}<select data-campo="${campo}">${html}</select>${svgL(IC_L.baixo, 'ico fl-pill-seta')}</label>`;
 
   fichaC.innerHTML = `
@@ -459,11 +469,15 @@ function desenhar() {
     </div>
     ${posCaminho < 0 && !fechado ? `<p class="fl-fora">Etapa atual: <b>${esc(nomeEtapa(l.etapa))}</b></p>` : ''}
   </header>
+  <section class="fl-obs">
+    <div class="fl-obs-cab"><label for="fl-obs">Observação</label><small id="fl-obs-st">todo mundo vê · salva ao sair do campo</small></div>
+    <textarea id="fl-obs" rows="2" placeholder="Escreva aqui o que todo mundo precisa saber sobre este lead (ex.: só atende depois das 18h)">${esc(l.notas || '')}</textarea>
+  </section>
   <div class="fl-corpo">
     <div class="fl-esq">
-      <nav class="fl-abas" aria-label="Seções da ficha">${[['resumo', 'Resumo'], ['quali', 'Qualificação'], ['historico', 'Histórico']]
-        .map(([k, t]) => `<button data-aba="${k}" class="${aba === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
-      <div class="fl-aba">${({ resumo, quali: qualificacao, historico })[aba](l, ficha)}</div>
+      <nav class="fl-abas" aria-label="Seções da ficha">${abas.map(([k, t, n, ruim]) =>
+        `<button data-aba="${k}" class="${aba === k ? 'on' : ''}">${t}${n ? `<em class="${ruim ? 'ruim' : ''}">${n}</em>` : ''}</button>`).join('')}</nav>
+      <div class="fl-aba">${({ fu: abaFu, visita: abaVisita, quali: qualificacao, historico })[aba](l, ficha)}</div>
     </div>
     <aside class="fl-dir" aria-label="Conversa">
       <div class="fl-conv-topo">
@@ -486,6 +500,7 @@ function desenhar() {
       </div>
     </aside>
   </div>`;
+  fichaC.scrollTop = y[2];
   fichaC.querySelector('.fl-esq').scrollTop = y[0];
   fichaC.querySelector('.fl-corpo').scrollTop = y[1];
   rolarFicha();
@@ -498,68 +513,81 @@ function rolarFicha() {
   if (at && cam.scrollWidth > cam.clientWidth) cam.scrollLeft = at.offsetLeft - cam.offsetLeft - (cam.clientWidth - at.offsetWidth) / 2;
 }
 
-function resumo(l) {
-  const itens = agendados(), regra = FU_REGRAS[l.etapa], fs = feitos(), nFu = fs.filter(r => r.tipo === 'Follow-up').length;
+// ---------- Aba Follow-up: o próximo em destaque, os outros agendados, agendar e os feitos ----------
+function abaFu(l) {
+  const [prox, ...outros] = agendados().filter(it => it.tipo === 'fu'), regra = FU_REGRAS[l.etapa];
+  const fs = feitos().filter(r => r.tipo === 'Follow-up');
+  const agAberto = flAgAberto || !prox || flAg.remarcando; // sem follow-up marcado, o agendar já vem aberto
   return `
-  <section class="fl-obs">
-    <div class="fl-obs-cab"><span>${svgL(IC_L.pino, 'ico ico-s')}Observações do lead</span><small id="fl-obs-st">fica fixo aqui · salva ao sair do campo</small></div>
-    <textarea id="fl-obs" rows="2" aria-label="Observações do lead" placeholder="O que todo mundo precisa saber sobre este lead (ex.: só atende depois das 18h)">${esc(l.notas || '')}</textarea>
-  </section>
-  <section class="fl-sec fl-acomp">
-    <div class="fl-sec-cab"><h4>Acompanhamento</h4>${regra ? `<span class="fl-dica-etapa">${svgL(IC_L.brilho, 'ico ico-s')}${esc(nomeEtapa(l.etapa))}: ${esc(regra[1].charAt(0).toLowerCase() + regra[1].slice(1))}</span>` : ''}</div>
-    ${itens.length ? `<div class="fl-bloco"><span class="fl-rot">Agendado</span>${itens.map((it, i) => itemAgendado(it, i)).join('')}</div>`
-      : '<div class="fl-sem"><i></i><div><b>Sem próximo passo.</b> Lead sem data marcada esfria — agende abaixo.</div></div>'}
-    <div class="fl-sep"></div>
-    <nav class="fl-modo" aria-label="O que fazer">
-      <button data-modo="agendar" class="${flModo === 'agendar' ? 'on' : ''}">${ico('calendario')}Agendar próximo passo</button>
-      <button data-modo="registrar" class="${flModo === 'registrar' ? 'on' : ''}">${svgL(IC_L.lapis)}Registrar o que foi feito</button>
-    </nav>
-    ${flModo === 'agendar' ? agendarHtml(itens) : registrarHtml()}
-    <div class="fl-sep"></div>
-    <div class="fl-bloco">
-      <div class="fl-sec-cab"><span class="fl-rot">Feito${nFu ? ' · ' + plural(nFu, 'follow-up', 'follow-ups') : ''}</span>${fs.length > 4 ? '<button class="lnk" data-aba="historico">Ver tudo no histórico</button>' : ''}</div>
-      ${fs.length ? `<ol class="fl-reg">${fs.slice(0, 4).map(linhaFeito).join('')}</ol>` : '<p class="cinza">Nada feito ainda. Ao concluir um follow-up, o que foi feito aparece aqui.</p>'}
-    </div>
-  </section>
+  ${prox ? heroi(prox) : `<div class="fl-sem"><i></i><div><b>Sem próximo follow-up.</b> Lead sem data marcada esfria — agende abaixo.${regra ? ` <span class="fl-sem-dica">${esc(nomeEtapa(l.etapa))}: ${esc(regra[1].charAt(0).toLowerCase() + regra[1].slice(1))}.</span>` : ''}</div></div>`}
+  ${outros.length ? `<div class="fl-bloco"><span class="fl-rot">Também agendado</span>${outros.map(itemAgendado).join('')}</div>` : ''}
+  ${agAberto ? blocoAgendar(flAg.remarcando ? 'Remarcar follow-up' : prox ? 'Agendar outro follow-up' : 'Agendar follow-up')
+    : '<button type="button" class="fl-add" data-acao="abrir-ag">+ Agendar outro follow-up</button>'}
   <section class="fl-sec">
-    <div class="fl-sec-cab"><h4>De onde veio</h4><small class="cinza">entrou em ${esc(l.entrou)}</small></div>
-    <div class="fl-origem">
-      <label class="fl-o-chip">${ico(ICO_ORIGEM[l.origem] || 'anuncio')}<select data-campo="origem" aria-label="Origem">${opcoes([...new Set([...ORIGENS, ...(l.origem ? [l.origem] : [])])], l.origem, 'Sem origem')}</select></label>
-      ${[l.campanha, l.conjunto, l.criativo].filter(Boolean).map(t => `<span class="fl-o-sep">›</span><span>${esc(t)}</span>`).join('') || '<span class="cinza">sem campanha registrada</span>'}
-    </div>
+    <div class="fl-sec-cab"><h4>Feitos</h4>${fs.length ? `<small class="cinza">${plural(fs.length, 'follow-up', 'follow-ups')}</small>` : ''}</div>
+    ${fs.length ? `<ol class="fl-reg">${fs.slice(0, 5).map(linhaFeito).join('')}</ol>` : '<p class="cinza">Nenhum follow-up feito ainda. Ao concluir, o que foi feito fica registrado aqui.</p>'}
+    <div class="fl-sec-pe">${fs.length > 5 ? '<button class="lnk" data-aba="historico">Ver todos no histórico</button>' : ''}<button class="lnk" data-acao="ir-registrar">Registrar um contato fora do agendado</button></div>
   </section>`;
 }
 
-// Uma linha de "Agendado" e, se for a que está sendo concluída, o "Como foi?"
-function itemAgendado(it, i) {
+// ---------- Aba Visita: a visita marcada (ou marcar uma) e as visitas feitas ----------
+function abaVisita(l) {
+  const vis = agendados().find(it => it.tipo === 'visita'), fs = feitos().filter(r => r.tipo === 'Visita');
+  const topo = vis ? heroi(vis) + (flAg.remarcando ? blocoAgendar('Remarcar visita')
+      : '<button type="button" class="lnk fl-desmarcar" data-acao="desmarcar">Desmarcar visita</button>')
+    : blocoAgendar('Marcar visita', '<p class="fl-vis-dica">Ao marcar, a visita aparece no quadro e o lead vai para "Visita agendada".</p>');
+  return topo + `
+  <section class="fl-sec">
+    <div class="fl-sec-cab"><h4>Visitas feitas</h4>${fs.length ? `<small class="cinza">${plural(fs.length, 'visita', 'visitas')}</small>` : ''}</div>
+    ${fs.length ? `<ol class="fl-reg">${fs.map(linhaFeito).join('')}</ol>` : '<p class="cinza">Nenhuma visita feita ainda. Ao tocar em "Visita feita", como foi fica registrado aqui.</p>'}
+  </section>`;
+}
+
+// O próximo follow-up (ou a visita) em destaque; tocar nele abre o "Como foi?" logo abaixo
+function heroi(it) {
+  const abrindo = flConc && flConc.chave === it.chave, visita = it.tipo === 'visita', passou = visita ? it.quando < new Date() : it.atrasado;
+  const rot = visita ? (passou ? 'Visita marcada · já passou' : 'Visita marcada') : (passou ? 'Follow-up atrasado' : 'Próximo follow-up');
+  const meta = visita ? (passou ? 'Registre como foi a visita.' : '') : [it.canal, passou ? 'era ' + dataLonga(it.quando) : ''].filter(Boolean).join(' · ');
+  return `<section class="fl-heroi${passou ? ' atrasado' : ''}${abrindo ? ' aberto' : ''}" data-abrir-item="${it.chave}" title="${abrindo ? '' : 'Concluir: registrar como foi'}">
+      <span class="fl-heroi-ic">${visita ? svgL(IC_L.casa) : ico('relogio')}</span>
+      <div class="fl-heroi-t"><small>${rot}</small><b>${esc(visita ? dataLonga(it.quando) : fuQuando(it.quando))}</b><p>${esc(visita ? (atual.lead.empreendimento || 'Empreendimento não escolhido') : it.texto)}</p>${meta ? `<span>${esc(meta)}</span>` : ''}</div>
+      ${abrindo ? '' : `<div class="fl-heroi-b"><button class="btn" data-acao="concluir" data-item="${it.chave}">${svgL(IC_L.check, 'ico ico-s')}${visita ? 'Visita feita' : 'Concluir'}</button>
+        <button class="mini" data-acao="remarcar" data-item="${it.chave}">Remarcar</button></div>`}
+    </section>
+    ${abrindo ? `<div class="fl-feito cc">${ccHtml(flConc, diasMarcados())}</div>` : ''}`;
+}
+
+// Os outros follow-ups em aberto (e o "Como foi?" do que está sendo concluído)
+function itemAgendado(it) {
   const abrindo = flConc && flConc.chave === it.chave;
   const rot = it.atrasado ? 'Atrasado · ' + dm(it.quando) + ' ' + hm(it.quando) : fuQuando(it.quando);
-  return `<div class="fl-item${i === 0 ? ' primeiro' : ''}${it.atrasado ? ' atrasado' : ''}${abrindo ? ' aberto' : ''}" data-abrir-item="${it.chave}" title="${abrindo ? '' : 'Concluir: registrar como foi'}">
-      <span class="fl-roda">${it.tipo === 'visita' ? svgL(IC_L.casa) : ico('relogio')}</span>
-      <div class="fl-item-tx"><div><b>${esc(rot)}</b><small>${it.tipo === 'visita' ? 'Visita' : 'Follow-up' + (it.canal ? ' · ' + esc(it.canal) : '')}</small></div><p>${esc(it.texto)}</p></div>
+  return `<div class="fl-item${it.atrasado ? ' atrasado' : ''}${abrindo ? ' aberto' : ''}" data-abrir-item="${it.chave}" title="${abrindo ? '' : 'Concluir: registrar como foi'}">
+      <span class="fl-roda">${ico('relogio')}</span>
+      <div class="fl-item-tx"><div><b>${esc(rot)}</b><small>Follow-up${it.canal ? ' · ' + esc(it.canal) : ''}</small></div><p>${esc(it.texto)}</p></div>
       ${abrindo ? '' : `<button class="mini" data-acao="remarcar" data-item="${it.chave}">Remarcar</button>
       <button class="mini ok" data-acao="concluir" data-item="${it.chave}">${svgL(IC_L.check, 'ico ico-s')}Feito</button>`}
     </div>
-    ${abrindo ? `<div class="fl-feito cc">${ccHtml(flConc, new Set(agendados().map(x => diaLocal(x.quando))))}</div>` : ''}`;
+    ${abrindo ? `<div class="fl-feito cc">${ccHtml(flConc, diasMarcados())}</div>` : ''}`;
 }
 
-function agendarHtml(itens) {
-  const a = flAg, visita = a.tipo === 'visita', d = a.q.data;
-  const marcados = new Set(itens.map(it => diaLocal(it.quando)));
-  const rem = a.remarcando, remTxt = rem ? (rem.tipo === 'visita' ? 'a visita' : `"${rem.texto}"`) : '';
-  const verbo = rem ? 'Remarcar' : visita ? (atual.lead.visita_em ? 'Remarcar visita' : 'Marcar visita') : 'Agendar';
-  return `<div class="ag">
-    ${rem ? `<p class="ag-rem">Remarcando ${esc(remTxt)} <button class="lnk" data-acao="cancelar-remarcar">cancelar</button></p>` : `<div class="ag-tipos">
-      <button type="button" class="ag-tipo${visita ? '' : ' on'}" data-ag-tipo="fu" aria-pressed="${!visita}"><span class="ag-ic">${ico('relogio')}</span><span><b>Follow-up</b><small>Lembrete para retomar o contato</small></span></button>
-      <button type="button" class="ag-tipo${visita ? ' on' : ''}" data-ag-tipo="visita" aria-pressed="${visita}"><span class="ag-ic">${svgL(IC_L.casa)}</span><span><b>Visita</b><small>Encontro com o cliente no imóvel</small></span></button>
-    </div>`}
-    <div class="ag-quando">${quandoHtml(a.q, marcados)}</div>
-    <div class="ag-pe">
-      ${visita ? '<p class="cinza ag-vis-dica">A visita aparece no quadro e o lead vai para "Visita agendada".</p>'
-        : `<input id="ag-nota" aria-label="O que fazer" placeholder="O que fazer? (ex.: ${esc(FU_REGRAS[atual.lead.etapa]?.[1].toLowerCase() || 'ligar para confirmar')})" value="${esc(a.nota)}">`}
-      <button class="btn" data-acao="agendar" ${d ? '' : 'disabled'}>${verbo}${d ? ' · ' + esc(rotuloQuando(d)) : ''}</button>
+// Agendar (ou remarcar) um follow-up ou a visita: dia, hora e o que fazer
+const agVerbo = () => flAg.remarcando ? 'Remarcar' : flAg.tipo === 'visita' ? 'Marcar visita' : 'Agendar';
+function blocoAgendar(titulo, dica = '') {
+  const a = flAg, l = atual.lead, visita = a.tipo === 'visita', d = a.q.data, rem = a.remarcando;
+  const cancelar = rem || (!visita && agendados().some(it => it.tipo === 'fu'));
+  return `<section class="fl-sec fl-ag">
+    <div class="fl-sec-cab"><h4>${esc(titulo)}</h4>${rem && !visita ? `<small class="cinza">${esc(rem.texto)}</small>` : ''}</div>
+    ${dica}
+    <div class="ag">
+      <div class="ag-quando">${quandoHtml(a.q, diasMarcados())}</div>
+      <div class="ag-pe">
+        ${visita ? `<label class="ag-emp"><span>Empreendimento</span><select data-campo="empreendimento">${opcoes(comValor(listaEmps(), l.empreendimento), l.empreendimento, '—')}</select></label>`
+          : `<input id="ag-nota" aria-label="O que fazer" placeholder="O que fazer? (ex.: ${esc(FU_REGRAS[l.etapa]?.[1].toLowerCase() || 'ligar para confirmar')})" value="${esc(a.nota)}">`}
+        ${cancelar ? `<button class="mini" data-acao="${rem ? 'cancelar-remarcar' : 'fechar-ag'}">Cancelar</button>` : ''}
+        <button class="btn" data-acao="agendar" ${d ? '' : 'disabled'}>${agVerbo()}${d ? ' · ' + esc(rotuloQuando(d)) : ''}</button>
+      </div>
     </div>
-  </div>`;
+  </section>`;
 }
 
 function registrarHtml() {
@@ -574,14 +602,13 @@ function registrarHtml() {
 
 function qualificacao(l, ficha) {
   const linhas = resumoFicha(ficha);
-  const com = (lista, v) => v && !lista.includes(v) ? [...lista, v] : lista; // não perde um valor que não está na lista
   const feitas = CHAVES_QUALI.filter(([, ok]) => ok(ficha)), faltam = CHAVES_QUALI.filter(([, ok]) => !ok(ficha)).map(([t]) => t);
   return `<section class="fl-sec">
     <div class="fl-sec-cab"><h4>Interesse</h4></div>
     <div class="fl-grade">
-      <label>Empreendimento<select data-campo="empreendimento">${opcoes(com(listaEmps(), l.empreendimento), l.empreendimento, '—')}</select></label>
-      <label>Tipologia<select data-campo="tipologia">${opcoes(com(['Studio', 'Apartamento', 'Casa', 'Lote', 'Sala comercial'], l.tipologia), l.tipologia, '—')}</select></label>
-      <label>Objetivo<select data-campo="objetivo">${opcoes(com(['Investimento', 'Moradia'], l.objetivo), l.objetivo, '—')}</select></label>
+      <label>Empreendimento<select data-campo="empreendimento">${opcoes(comValor(listaEmps(), l.empreendimento), l.empreendimento, '—')}</select></label>
+      <label>Tipologia<select data-campo="tipologia">${opcoes(comValor(['Studio', 'Apartamento', 'Casa', 'Lote', 'Sala comercial'], l.tipologia), l.tipologia, '—')}</select></label>
+      <label>Objetivo<select data-campo="objetivo">${opcoes(comValor(['Investimento', 'Moradia'], l.objetivo), l.objetivo, '—')}</select></label>
     </div>
   </section>
   <section class="fl-sec">
@@ -600,6 +627,17 @@ function historico(l) {
   const tudo = [...feitos(), ...hs].sort((a, b) => b.quando - a.quando);
   tudo.push({ quando: new Date(l.criado_em), tipo: 'Entrada', texto: [l.origem || 'Sem origem', l.campanha, l.criativo].filter(Boolean).join(' · '), marco: true });
   return `<section class="fl-sec">
+    <div class="fl-sec-cab"><h4>De onde veio</h4><small class="cinza">entrou em ${esc(l.entrou)}</small></div>
+    <div class="fl-origem">
+      <label class="fl-o-chip">${ico(ICO_ORIGEM[l.origem] || 'anuncio')}<select data-campo="origem" aria-label="Origem">${opcoes([...new Set([...ORIGENS, ...(l.origem ? [l.origem] : [])])], l.origem, 'Sem origem')}</select></label>
+      ${[l.campanha, l.conjunto, l.criativo].filter(Boolean).map(t => `<span class="fl-o-sep">›</span><span>${esc(t)}</span>`).join('') || '<span class="cinza">sem campanha registrada</span>'}
+    </div>
+  </section>
+  <section class="fl-sec fl-registrar">
+    <div class="fl-sec-cab"><h4>Registrar o que foi feito</h4><small class="cinza">ligação, conversa ou visita fora de um follow-up agendado</small></div>
+    ${registrarHtml()}
+  </section>
+  <section class="fl-sec">
     <div class="fl-sec-cab"><h4>Histórico</h4><small class="cinza">o que foi feito, etapas, mensagens e alterações</small></div>
     <ol class="fl-reg">${tudo.map(linhaFeito).join('')}</ol>
   </section>`;
@@ -651,7 +689,7 @@ async function salvarObs() {
 function redesenharConc() {
   const caixa = fichaC.querySelector('.fl-feito');
   if (!caixa || !flConc) return desenhar();
-  caixa.innerHTML = ccHtml(flConc, new Set(agendados().map(x => diaLocal(x.quando))));
+  caixa.innerHTML = ccHtml(flConc, diasMarcados());
 }
 function abrirConc(chave) {
   const it = agendados().find(x => x.chave === chave);
@@ -669,16 +707,16 @@ async function salvarConc(botao) {
     const r = await ccSalvar(c, { fuId: c.chave.startsWith('fu:') ? Number(c.chave.slice(3)) : null, leadId: l.id });
     if (r === false) { botao.disabled = false; return; }
   } catch (x) { botao.disabled = false; return; }
-  flConc = null; flModo = 'agendar'; flAg = null;
+  flConc = null; flAg = null; flAgAberto = false;
   await recarregarFicha();
 }
 const redesenharAgenda = () => {
   const q = fichaC.querySelector('.ag-quando'), btn = fichaC.querySelector('[data-acao="agendar"]');
   if (!q || !btn) return desenhar();
-  q.innerHTML = quandoHtml(flAg.q, new Set(agendados().map(it => diaLocal(it.quando))));
-  const d = flAg.q.data, visita = flAg.tipo === 'visita';
+  q.innerHTML = quandoHtml(flAg.q, diasMarcados());
+  const d = flAg.q.data;
   btn.disabled = !d;
-  btn.textContent = (flAg.remarcando ? 'Remarcar' : visita ? (atual.lead.visita_em ? 'Remarcar visita' : 'Marcar visita') : 'Agendar') + (d ? ' · ' + rotuloQuando(d) : '');
+  btn.textContent = agVerbo() + (d ? ' · ' + rotuloQuando(d) : '');
 };
 
 // ---------- Ações da ficha ----------
@@ -695,12 +733,10 @@ async function cliqueFicha(e) {
   // tocar no agendado (fora dos botões) abre o concluir ali mesmo
   const linhaAg = e.target.closest('[data-abrir-item]');
   if (linhaAg && !e.target.closest('button, a') && !linhaAg.classList.contains('aberto')) { abrirConc(linhaAg.dataset.abrirItem); return; }
-  const el = e.target.closest('[data-acao], [data-etapa], [data-aba], [data-modo], [data-ag-tipo], [data-reg-tipo]');
+  const el = e.target.closest('[data-acao], [data-etapa], [data-aba], [data-reg-tipo]');
   if (!el) return;
   const l = atual.lead, ds = el.dataset;
-  if (ds.aba) { aba = ds.aba; flTopo = true; desenhar(); return; }
-  if (ds.modo) { flModo = ds.modo; desenhar(); return; }
-  if (ds.agTipo) { flAg.tipo = ds.agTipo; desenhar(); return; }
+  if (ds.aba) { aba = ds.aba; flTopo = true; flConc = null; flAg = null; flAgAberto = false; desenhar(); return; }
   if (ds.regTipo) { flReg.tipo = ds.regTipo; const t = $('#reg-texto'); if (t) flReg.texto = t.value; desenhar(); $('#reg-texto')?.focus(); return; }
   try {
     if (ds.etapa) {
@@ -730,11 +766,22 @@ async function cliqueFicha(e) {
       case 'remarcar': {
         const it = agendados().find(x => x.chave === ds.item);
         if (!it) return;
-        flModo = 'agendar'; flConc = null;
+        flConc = null; flAgAberto = true;
         flAg = { tipo: it.tipo, q: { data: new Date(it.quando < new Date() ? daqui(1, it.quando.getHours()) : it.quando) }, nota: it.tipo === 'fu' ? it.texto : '', remarcando: it };
-        desenhar(); fichaC.querySelector('.ag')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); break;
+        desenhar(); fichaC.querySelector('.fl-ag')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); break;
       }
-      case 'cancelar-remarcar': flAg = novoAg(); desenhar(); break;
+      case 'cancelar-remarcar': case 'fechar-ag': flAg = null; flAgAberto = false; desenhar(); break;
+      case 'abrir-ag':
+        flAg = null; flAgAberto = true; desenhar();
+        fichaC.querySelector('.fl-ag')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); break;
+      case 'desmarcar':
+        if (!confirm('Desmarcar a visita? Ela sai do quadro e da agenda.')) return;
+        await enviar('lead_campo', { id: l.id, campo: 'visita_em', valor: '' });
+        window.aviso?.('Visita desmarcada'); flAg = null; await recarregarFicha(); break;
+      case 'ir-registrar': {
+        aba = 'historico'; flTopo = true; flConc = null; flAg = null; flAgAberto = false; desenhar();
+        const t = $('#reg-texto'); t?.focus({ preventScroll: true }); t?.closest('.fl-sec')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); break;
+      }
       case 'agendar': {
         const d = flAg.q.data, nota = ($('#ag-nota')?.value ?? flAg.nota).trim(), rem = flAg.remarcando;
         if (!d) return;
@@ -753,7 +800,7 @@ async function cliqueFicha(e) {
             window.aviso?.(rem ? 'Follow-up remarcado ✓' : 'Follow-up agendado ✓');
           }
         } catch (x) { el.disabled = false; return; }
-        flAg = null;
+        flAg = null; flAgAberto = false;
         await recarregarFicha(); break;
       }
       case 'registrar': {
@@ -762,7 +809,7 @@ async function cliqueFicha(e) {
         el.disabled = true;
         try { await enviar('historico', { id: l.id, tipo: flReg.tipo, texto: txt }); } catch (x) { el.disabled = false; return; }
         window.aviso?.('Registrado ✓');
-        flReg.texto = ''; flModo = 'agendar'; // depois de registrar, o natural é marcar o próximo passo
+        flReg.texto = '';
         await recarregarFicha(); break;
       }
       case 'usar-sug': { const t = $('#fl-texto'); t.value = sugestao(); t.focus(); break; }
